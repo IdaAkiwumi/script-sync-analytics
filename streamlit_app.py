@@ -210,9 +210,24 @@ if not df.empty:
     raw_sentiment = df['Sentiment_Score'].mean()
     sentiment_pct = (raw_sentiment + 1) / 2 
     
-    # 1. Appetite Logic (Clamped for UI stability)
-    raw_appetite = int(df['Popularity_Score'].quantile(0.90))
-    avg_market = min(100, raw_appetite) 
+    # 1. Appetite Logic: Percentile Ranking (The "Spread" Fix)
+    # This ranks the current genre heat against the full dataset distribution
+    # providing a beautiful spread from 5% to 95%.
+    
+    import numpy as np
+    
+    # Get the 90th percentile of your filtered genre
+    genre_90th = df['Popularity_Score'].quantile(0.90)
+    
+    # Find where that score sits as a percentile of the ENTIRE dataset
+    # (e.g., if genre_90th is better than 80% of all movies, the score is 80)
+    market_percentile = (df_full['Popularity_Score'] < genre_90th).mean()
+    
+    # Convert to 0-100 scale and apply a slight boost to keep the "Heat" feeling high
+    avg_market = int(market_percentile * 100)
+    
+    # Ensure a healthy minimum and maximum for UI impact
+    avg_market = max(5, min(95, avg_market))
     
     # 2. Blue Ocean / Friction Logic
     # We measure 'Market Gap' (The Opportunity)
