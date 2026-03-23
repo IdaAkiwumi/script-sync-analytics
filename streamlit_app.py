@@ -340,8 +340,8 @@ with tab1:
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=0, r=0, t=20, b=0),
-        xaxis_title="Sentiment ROI (Baseline: 5.0 Rating)",
-        yaxis_title="Market Appetite (Volatility Index)"
+        xaxis_title="Sentiment ROI",
+        yaxis_title="Market Appetite (Product Score Volatility Index)"
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
 
