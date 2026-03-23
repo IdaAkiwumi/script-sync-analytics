@@ -155,8 +155,13 @@ with st.sidebar:
     genre_filter = st.multiselect("Filter by Primary Genre", all_genres, default=default_selection)
     
     st.markdown("---")
-    st.markdown(f"LinkedIn → [Ida Akiwumi](https://www.linkedin.com/in/idaa11)")
-    st.markdown(f"**Designed by Ida Akiwumi** \n*Product Architect*")
+    st.markdown("Follow me on:")
+    st.markdown(f"LinkedIn $\\rightarrow$ [Ida Akiwumi](https://www.linkedin.com/in/idaa11)")
+    
+    st.markdown(f"""
+        **Developed by {__author__}**,  
+        *Product Architect & Narrative Strategist* Specializing in the intersection of code and story.
+    """)
 
 # --- 5. DATA FILTERING LOGIC ---
 df = df_full[df_full['Genre'].isin(genre_filter)]
