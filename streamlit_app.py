@@ -91,7 +91,7 @@ def load_placeholder_data():
     data = {
         'Project': ['Soul Debt', 'Gone Ghost', 'Market Comp A', 'Market Comp B', 'Market Comp C'],
         'Sentiment_Score': [0.75, 0.45, -0.20, 0.10, 0.30],
-        'Market_Potential': [94, 89, 40, 55, 60],
+        'Popularity_Score': [94, 89, 40, 55, 60],
         'Genre': ['Thriller', 'Comedy', 'Horror', 'Drama', 'Action'],
     }
     return pd.DataFrame(data)
@@ -108,7 +108,7 @@ def load_real_data():
             m_df = m_df.rename(columns={
                 'title': 'Project',
                 'vote_average': 'Sentiment_Score',
-                'popularity': 'Market_Potential',
+                'popularity': 'Popularity_Score',
                 'genres': 'Genre'
             })
 
@@ -205,7 +205,7 @@ if not df.empty:
     sentiment_pct = (raw_sentiment + 1) / 2 
     
     # CLAMPED: Calculate 90th percentile but cap it at 100 for the UI
-    raw_appetite = int(df['Market_Potential'].quantile(0.90))
+    raw_appetite = int(df['Popularity_Score'].quantile(0.90))
     avg_market = min(100, raw_appetite) 
     
     saturation_ratio = len(df) / len(df_full)
@@ -283,8 +283,8 @@ with tab1:
     fig_scatter = px.scatter(
         df.head(600), 
         x="Sentiment_Score", 
-        y="Market_Potential", 
-        size="Market_Potential", 
+        y="Popularity_Score", 
+        size="Popularity_Score", 
         color="Genre", 
         hover_name="Project",
         hover_data=["Lead_Talent", "Genre"] if "Lead_Talent" in df.columns else ["Genre"],
