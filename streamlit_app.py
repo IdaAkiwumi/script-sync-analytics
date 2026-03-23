@@ -203,14 +203,15 @@ with st.expander("ℹ️ STRATEGY GUIDE: How to use Script Sync"):
 if not df.empty:
     raw_sentiment = df['Sentiment_Score'].mean()
     sentiment_pct = (raw_sentiment + 1) / 2 
-    avg_market = int(min(100, df['Market_Potential'].mean()))
     
-    # DYNAMIC FRICTION CALC: Ratio of selected data vs total dataset
+    # CLAMPED: Calculate 90th percentile but cap it at 100 for the UI
+    raw_appetite = int(df['Market_Potential'].quantile(0.90))
+    avg_market = min(100, raw_appetite) 
+    
     saturation_ratio = len(df) / len(df_full)
     friction_pct = max(0.05, min(0.95, 1.0 - saturation_ratio))
     saturation_label = "Low" if saturation_ratio < 0.1 else "Neutral" if saturation_ratio < 0.3 else "High"
 else:
-    # ADDED 'saturation_ratio = 0' here to prevent the NameError
     sentiment_pct, avg_market, friction_pct, saturation_label, saturation_ratio = 0, 0, 0, "N/A", 0
 
 # --- DYNAMIC COLOR MAPPING ---
@@ -222,10 +223,10 @@ elif sentiment_pct > 0.4:
 else: 
     sent_color, sent_label = "#888", "Neutral"
 
-# 2. Appetite Color
-if avg_market > 70: 
+# # 2. Appetite Color (Adjusted for 90th percentile scores)
+if avg_market > 80: 
     app_color = "#28a745"
-elif avg_market > 40: 
+elif avg_market > 50: 
     app_color = "#ffc107"
 else: 
     app_color = "#dc3545"
