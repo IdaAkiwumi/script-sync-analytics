@@ -287,6 +287,8 @@ with col3:
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
+    # SHIFT LOGIC: Starts at 0.0 (the 5/10 sentiment mark) 
+    # and goes to 1.1 (the 10/10 sentiment mark with padding)
     fig_scatter = px.scatter(
         df.head(600), 
         x="Sentiment_Score", 
@@ -294,17 +296,27 @@ with tab1:
         size="Popularity_Score", 
         color="Genre", 
         hover_name="Project",
-        hover_data=["Lead_Talent", "Genre"] if "Lead_Talent" in df.columns else ["Genre"],
+        hover_data={
+            "Sentiment_Score": ":.2f",
+            "Popularity_Score": ":.1f",
+            "Genre": True,
+            "Lead_Talent": True if "Lead_Talent" in df.columns else False
+        },
+        range_x=[-0.05, 0.86], # Starts at -0.05 so the '0' dots aren't cut in half
         template="plotly_dark",
         size_max=40, 
         height=700 
     )
+    
     fig_scatter.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
+    
     fig_scatter.update_layout(
         showlegend=False, 
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=20, b=0)
+        margin=dict(l=0, r=0, t=20, b=0),
+        xaxis_title="Sentiment ROI (Baseline: 5.0 Rating)",
+        yaxis_title="Market Appetite (Popularity)"
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
 
