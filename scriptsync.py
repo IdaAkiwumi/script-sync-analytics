@@ -1,25 +1,4 @@
-"""
-PROJECT: Script-Sync Analytics
-VERSION: 1.0.0
-AUTHOR: Ida Akiwumi
-ROLE: Product Architect | Narrative Strategist | Lead Product Designer
-TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
-
-DESCRIPTION:
-A strategic ROI engine for the film and gaming industries. Script-Sync 
-translates narrative scripts and movie metadata into actionable data 
-visualizations, helping producers identify Blue Ocean market opportunities.
-
-IDEAL FOR:
-- Studio Executives & Greenlight Committees
-- Creative Operations & Narrative Strategy
-- Data Storytelling & Market Saturation Analysis
-"""
-
-__author__ = "Ida Akiwumi"
-__version__ = "1.0.0"
-__license__ = "Proprietary"
-__status__ = "Production / Portfolio"
+# ... [Keep all your top-level docstrings and imports exactly as they are] ...
 
 import streamlit as st
 import pandas as pd
@@ -43,7 +22,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom Akiwumi-Standard CSS
+# Custom Akiwumi-Standard CSS (Kept exactly as you wrote it)
 st.markdown("""
     <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
@@ -80,7 +59,6 @@ def analyze_sentiment(text):
 
 @st.cache_data
 def load_placeholder_data():
-    # Professional sample set for initial portfolio view
     data = {
         'Project': ['Soul Debt', 'Gone Ghost', 'Market Comp A', 'Market Comp B', 'Market Comp C'],
         'Sentiment_Score': [0.75, 0.45, -0.20, 0.10, 0.55],
@@ -91,21 +69,31 @@ def load_placeholder_data():
     return pd.DataFrame(data)
 
 # --- 4. SIDEBAR STUDIO CONTROLS ---
+df_full = load_placeholder_data()
+
 with st.sidebar:
     st.title("🎬 Strategy Controls")
     st.subheader("📊 Analytical Filters")
-    genre_filter = st.multiselect("Filter by Genre", ["Thriller", "Comedy", "Sci-Fi", "Drama"], default=[])
+    
+    # FIX: We dynamically pull genres from the dataframe so the filter always matches the data
+    all_genres = df_full['Genre'].unique().tolist()
+    genre_filter = st.multiselect("Filter by Genre", all_genres, default=all_genres)
     
     st.markdown("---")
     st.markdown("Follow me on:")
-    st.markdown(f"LinkedIn $\\rightarrow$ [Ida Akiwumi](https://www.linkedin.com/in/idaa11)")
+    # Cleaned up the LaTeX arrow to a standard markdown arrow for cleaner rendering
+    st.markdown(f"LinkedIn → [Ida Akiwumi](https://www.linkedin.com/in/idaa11)")
     
     st.markdown(f"""
-        **Developed by {__author__}**,  
+        **Developed by Ida Akiwumi**,  
         *Product Architect & Narrative Strategist* Specializing in the intersection of code and story.
     """)
 
-# --- 5. MAIN INTERFACE ---
+# --- 5. DATA FILTERING LOGIC ---
+# This ensures the rest of the app only sees what is selected
+df = df_full[df_full['Genre'].isin(genre_filter)]
+
+# --- 6. MAIN INTERFACE ---
 st.markdown(f'''
     <div class="compact-header">
         <span>🎬 SCRIPT-SYNC ANALYTICS</span>
@@ -116,8 +104,6 @@ st.markdown(f'''
 st.markdown("### Translating Narrative Friction into Market ROI")
 
 # --- DATA VISUALIZATION SECTION ---
-df = load_placeholder_data()
-
 col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
@@ -125,7 +111,7 @@ with col1:
     st.markdown('</div>', unsafe_allow_html=True)
 with col2:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Market Appetite", "92%", delta="Optimal")
+    st.metric("Market Appetite", f"{int(df['Market_Potential'].mean()) if not df.empty else 0}%", delta="Optimal")
     st.markdown('</div>', unsafe_allow_html=True)
 with col3:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
@@ -133,12 +119,21 @@ with col3:
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.subheader("Narrative Archetype Performance")
+
+# FIX: Expanded the palette to ensure high contrast between 5+ genres 
+# while staying in the "Luxe Gold/Dark" aesthetic.
+akiwumi_palette = ['#ffd600', '#ffffff', '#ffaa00', '#888888', '#444444', '#b8860b']
+
 fig = px.scatter(
     df, x="Sentiment_Score", y="Market_Potential", 
     size="Market_Potential", color="Genre",
     hover_name="Project", template="plotly_dark",
-    color_discrete_sequence=['#ffd600', '#ffffff', '#888888', '#444444']
+    color_discrete_sequence=akiwumi_palette
 )
+
+# Added a touch of "Senior UX" polish to the chart layout
+fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+
 st.plotly_chart(fig, use_container_width=True)
 
 # --- TABLE VIEW FOR EXECUTIVES ---
