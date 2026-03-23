@@ -27,6 +27,64 @@ import plotly.express as px
 from textblob import TextBlob
 import os
 
+
+import ast # Added for genre parsing
+
+# ... (Keep your existing UI/CSS code exactly as is) ...
+
+@st.cache_data
+def load_real_data():
+    """Attempts to load and merge data from the /data directory."""
+    try:
+        # 1. Flexible Pathing for Local vs GitHub
+        base_path = "data" if os.path.exists("data") else "script-sync-analytics/data"
+        movies_path = os.path.join(base_path, "movie_database_movies_2026.csv")
+        cast_path = os.path.join(base_path, "movie_database_cast_2026.csv")
+        
+        if os.path.exists(movies_path):
+            # 2. Robust CSV loading (skips malformed lines)
+            m_df = pd.read_csv(movies_path, engine='python', on_bad_lines='skip')
+            
+            # Bridge column names
+            m_df = m_df.rename(columns={
+                'title': 'Project',
+                'vote_average': 'Sentiment_Score',
+                'popularity': 'Market_Potential',
+                'genres': 'Genre'
+            })
+
+            # 3. Genre Cleaning Logic (Unpacks TMDB format)
+            def clean_genres(g):
+                try:
+                    if isinstance(g, str) and "[" in g:
+                        items = ast.literal_eval(g)
+                        return items[0]['name'] if items else "Unknown"
+                    return str(g)
+                except:
+                    return "Misc"
+            
+            if 'Genre' in m_df.columns:
+                m_df['Genre'] = m_df['Genre'].apply(clean_genres)
+
+            # Optional: Merge with cast
+            if os.path.exists(cast_path):
+                c_df = pd.read_csv(cast_path, engine='python', on_bad_lines='skip')
+                m_df = pd.merge(m_df, c_df[['id', 'name']], on='id', how='left').rename(columns={'name': 'Lead_Talent'})
+            
+            # Normalize Sentiment Score
+            if m_df['Sentiment_Score'].max() > 1:
+                m_df['Sentiment_Score'] = (m_df['Sentiment_Score'] - 5) / 5
+                
+            return m_df
+    except Exception as e:
+        # Silently log error or use st.sidebar.error(e) for debugging
+        return None
+    return None
+
+# ... (Keep the rest of your script unchanged) ...
+
+
+
 # --- 1. INITIALIZE STATE ---
 def init_state():
     if "data_loaded" not in st.session_state:
