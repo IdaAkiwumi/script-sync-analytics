@@ -154,6 +154,19 @@ with st.sidebar:
 
     genre_filter = st.multiselect("Filter by Primary Genre", all_genres, default=default_selection)
     
+    
+    # --- DATA SOURCE INJECTION START ---
+    st.markdown("---")
+    with st.expander("📚 Data Sources & Intelligence"):
+        st.caption("This engine aggregates market metadata from:")
+        st.markdown("""
+        - [TMDB Movie Metadata](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)
+        - [2023 930k Movie Dataset](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies)
+        - [Comprehensive TMDB Reviews](https://www.kaggle.com/datasets/rishabhkumar2003/the-movie-database-tmdb-comprehensive-dataset)
+        """)
+    # --- DATA SOURCE INJECTION END ---
+    
+    
     st.markdown("---")
     st.markdown("Follow me on:")
     st.markdown(f"LinkedIn $\\rightarrow$ [Ida Akiwumi](https://www.linkedin.com/in/idaa11)")
@@ -170,7 +183,7 @@ df = df_full[df_full['Genre'].isin(genre_filter)]
 st.markdown(f'''
     <div class="compact-header">
         <span>🎬 SCRIPT-SYNC ANALYTICS</span>
-        <span>STATUS: <span style="background:#ffd600; color:#000; padding:0 5px; border-radius:3px;">LIVE MARKET DATA</span></span>
+        <span>STATUS: <span style="background:#ffd600; color:#000; padding:0 5px; border-radius:3px;">EARLY 2026 MARKET DATA</span></span>
     </div>
 ''', unsafe_allow_html=True)
 
