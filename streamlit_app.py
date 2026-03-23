@@ -167,7 +167,11 @@ with st.sidebar:
         **Sourced March 2026.**
         """)
     # --- DATA SOURCE INJECTION END ---
-    
+    st.info("""
+    **Architect's Note:** This dashboard visualizes *Market Volatility* and *Sentiment Trends*. 
+    For specific ROI projections, these metrics should be cross-referenced 
+    with production budget tiers and IP-attachment status.
+    """)
     
     st.markdown("---")
     st.markdown("Follow me on:")
@@ -287,10 +291,16 @@ with col3:
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
-    # SHIFT LOGIC: Starts at 0.0 (the 5/10 sentiment mark) 
-    # and goes to 1.1 (the 10/10 sentiment mark with padding)
+    # SHIFT LOGIC: Starts at 5/10 mark. 
+    # Added a 'clip' to Popularity to prevent outliers from ruining the scale
+    display_df = df.head(600).copy()
+    
+    # Optional: If your chart looks 'squashed' at the bottom because of one big movie, 
+    # uncomment the line below to cap the visual height.
+    # display_df['Popularity_Score'] = display_df['Popularity_Score'].clip(upper=display_df['Popularity_Score'].quantile(0.95))
+
     fig_scatter = px.scatter(
-        df.head(600), 
+        display_df, 
         x="Sentiment_Score", 
         y="Popularity_Score", 
         size="Popularity_Score", 
@@ -300,11 +310,11 @@ with tab1:
             "Sentiment_Score": ":.2f",
             "Popularity_Score": ":.1f",
             "Genre": True,
-            "Lead_Talent": True if "Lead_Talent" in df.columns else False
+            "Lead_Talent": True if "Lead_Talent" in display_df.columns else False
         },
-        range_x=[-0.05, 0.86], # Starts at -0.05 so the '0' dots aren't cut in half
+        range_x=[-0.05, 0.9], # Cleanly shows 5.0 to 9.5 ratings
         template="plotly_dark",
-        size_max=40, 
+        size_max=35, 
         height=700 
     )
     
@@ -316,7 +326,7 @@ with tab1:
         paper_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=0, r=0, t=20, b=0),
         xaxis_title="Sentiment ROI (Baseline: 5.0 Rating)",
-        yaxis_title="Market Appetite (Popularity)"
+        yaxis_title="Market Appetite (Volatility Index)"
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
 
