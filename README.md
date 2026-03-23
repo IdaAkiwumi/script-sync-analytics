@@ -30,7 +30,7 @@ In a high-stakes production environment, "gut feeling" isn't enough to greenligh
 * **Sentiment ROI Mapping:** Uses NLP logic to score narrative themes against historical market success.
 * **Genre Friction Analysis:** Visualizes market saturation vs. audience appetite, identifying "Blue Ocean" opportunities for original IP (Intellectual Property).
 * **The UX:** Built by a **Lead Product Designer**, the dashboard prioritizes WCAG 2.1 (Web Content Accessibility Guidelines) and high-contrast data storytelling for rapid executive decision-making.
-* **Predictive Roadmap Logic:** Automatically flags narrative archetypes—like "Legal Thriller" or "Action Comedy"—that are currently trending in global industry datasets.
+* **Predictive Roadmap Logic:** FIlters allow combination of narrative archetypes—like "Crime Thriller" or "Action Comedy"—that are currently trending in global industry datasets.
 
 ---
 
