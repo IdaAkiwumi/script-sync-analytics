@@ -198,17 +198,69 @@ if not df.empty:
     friction_pct = max(0.05, min(0.95, 1.0 - saturation_ratio))
     saturation_label = "Low" if saturation_ratio < 0.1 else "Neutral" if saturation_ratio < 0.3 else "High"
 else:
-    sentiment_pct, avg_market, friction_pct, saturation_label = 0, 0, 0, "N/A"
+    # ADDED 'saturation_ratio = 0' here to prevent the NameError
+    sentiment_pct, avg_market, friction_pct, saturation_label, saturation_ratio = 0, 0, 0, "N/A", 0
+
+# --- DYNAMIC COLOR MAPPING ---
+# 1. Sentiment Color
+if sentiment_pct > 0.6: 
+    sent_color, sent_label = "#28a745", "High"
+elif sentiment_pct > 0.4: 
+    sent_color, sent_label = "#ffc107", "Moderate"
+else: 
+    sent_color, sent_label = "#888", "Neutral"
+
+# 2. Appetite Color
+if avg_market > 70: 
+    app_color = "#28a745"
+elif avg_market > 40: 
+    app_color = "#ffc107"
+else: 
+    app_color = "#dc3545"
+
+# 3. Friction Color (Note: Low Friction is GOOD/Green)
+if df.empty:
+    fric_color, fric_label, friction_pct = "#888", "Neutral", 0.0
+elif saturation_ratio < 0.1: 
+    fric_color, fric_label = "#28a745", "Low"
+elif saturation_ratio < 0.3: 
+    fric_color, fric_label = "#ffc107", "Neutral"
+else: 
+    fric_color, fric_label = "#dc3545", "High"
+
+
+
 
 col1, col2, col3 = st.columns(3)
+
 with col1:
-    st.metric("Avg Sentiment ROI", "High" if sentiment_pct > 0.6 else "Moderate" if sentiment_pct > 0.4 else "Neutral", delta=f"{len(df)} Projects")
+    st.markdown(f"""
+        <div class="metric-card">
+            <div style="color: #888; font-size: 0.9rem;">Avg Sentiment ROI</div>
+            <div style="color: {sent_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{sent_label}</div>
+            <div style="color: #ffd600; font-size: 0.8rem;">{len(df)} Projects</div>
+        </div>
+    """, unsafe_allow_html=True)
     st.progress(max(0.0, min(1.0, sentiment_pct)))
+
 with col2:
-    st.metric("Market Appetite", f"{avg_market}%", delta="Global Target")
+    st.markdown(f"""
+        <div class="metric-card">
+            <div style="color: #888; font-size: 0.9rem;">Market Appetite</div>
+            <div style="color: {app_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{avg_market}%</div>
+            <div style="color: #ffd600; font-size: 0.8rem;">Global Target</div>
+        </div>
+    """, unsafe_allow_html=True)
     st.progress(avg_market/100 if avg_market > 0 else 0.0)
+
 with col3:
-    st.metric("Genre Friction", saturation_label, delta="Market Opportunity")
+    st.markdown(f"""
+        <div class="metric-card">
+            <div style="color: #888; font-size: 0.9rem;">Genre Friction</div>
+            <div style="color: {fric_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{fric_label}</div>
+            <div style="color: #ffd600; font-size: 0.8rem;">Market Opportunity</div>
+        </div>
+    """, unsafe_allow_html=True)
     st.progress(friction_pct)
 
 # --- 7. VISUALIZATIONS ---
