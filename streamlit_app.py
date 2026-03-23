@@ -204,17 +204,32 @@ if not df.empty:
     raw_sentiment = df['Sentiment_Score'].mean()
     sentiment_pct = (raw_sentiment + 1) / 2 
     
-    # CLAMPED: Calculate 90th percentile but cap it at 100 for the UI
+    # 1. Appetite Logic (Clamped for UI stability)
     raw_appetite = int(df['Popularity_Score'].quantile(0.90))
     avg_market = min(100, raw_appetite) 
     
+    # 2. Blue Ocean / Friction Logic
+    # We measure 'Market Gap' (The Opportunity)
     saturation_ratio = len(df) / len(df_full)
-    friction_pct = max(0.05, min(0.95, 1.0 - saturation_ratio))
-    saturation_label = "Low" if saturation_ratio < 0.1 else "Neutral" if saturation_ratio < 0.3 else "High"
+    blue_ocean_pct = max(0.05, min(0.95, 1.0 - saturation_ratio))
+    
+    # Unified Label & Color Mapping (Consolidated to prevent drift)
+    if blue_ocean_pct > 0.85: # 0-15% Saturation
+        fric_label = "Low"     # Low Friction
+        fric_color = "#28a745" # Green (Good)
+    elif blue_ocean_pct > 0.60: # 15-40% Saturation
+        fric_label = "Neutral" 
+        fric_color = "#ffc107" # Yellow
+    else:                      # > 40% Saturation
+        fric_label = "High"    # High Friction
+        fric_color = "#dc3545" # Red (Crowded)
+        
+    friction_pct = blue_ocean_pct # The bar now represents the "Market Gap"
 else:
     sentiment_pct, avg_market, friction_pct, saturation_label, saturation_ratio = 0, 0, 0, "N/A", 0
+    fric_label, fric_color = "N/A", "#888"
 
-# --- DYNAMIC COLOR MAPPING ---
+# --- DYNAMIC COLOR MAPPING (Sentiment & Appetite only) ---
 # 1. Sentiment Color
 if sentiment_pct > 0.6: 
     sent_color, sent_label = "#28a745", "High"
@@ -223,23 +238,13 @@ elif sentiment_pct > 0.4:
 else: 
     sent_color, sent_label = "#888", "Neutral"
 
-# # 2. Appetite Color (Adjusted for 90th percentile scores)
+# 2. Appetite Color
 if avg_market > 80: 
     app_color = "#28a745"
 elif avg_market > 50: 
     app_color = "#ffc107"
 else: 
     app_color = "#dc3545"
-
-# 3. Friction Color (Note: Low Friction is GOOD/Green)
-if df.empty:
-    fric_color, fric_label, friction_pct = "#888", "Neutral", 0.0
-elif saturation_ratio < 0.1: 
-    fric_color, fric_label = "#28a745", "Low"
-elif saturation_ratio < 0.3: 
-    fric_color, fric_label = "#ffc107", "Neutral"
-else: 
-    fric_color, fric_label = "#dc3545", "High"
 
 
 
