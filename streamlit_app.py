@@ -227,7 +227,7 @@ if not df.empty:
     avg_market = int(market_percentile * 100)
     
     # Ensure a healthy minimum and maximum for UI impact
-    avg_market = max(5, min(95, avg_market))
+    avg_market = max(2, min(100, avg_market))
     
     # 2. Blue Ocean / Friction Logic
     # We measure 'Market Gap' (The Opportunity)
