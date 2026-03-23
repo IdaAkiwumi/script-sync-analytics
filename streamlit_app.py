@@ -254,7 +254,7 @@ with col1:
             <div style="color: #ffd600; font-size: 0.8rem;">{len(df)} Projects</div>
         </div>
     """, unsafe_allow_html=True)
-    st.progress(max(0.0, min(1.0, sentiment_pct)))
+    st.progress(max(0.0, min(1.0, float(sentiment_pct))))
 
 with col2:
     st.markdown(f"""
@@ -264,7 +264,7 @@ with col2:
             <div style="color: #ffd600; font-size: 0.8rem;">Global Target</div>
         </div>
     """, unsafe_allow_html=True)
-    st.progress(avg_market/100 if avg_market > 0 else 0.0)
+    st.progress(max(0.0, min(1.0, avg_market / 100.0)))
 
 with col3:
     st.markdown(f"""
@@ -274,7 +274,7 @@ with col3:
             <div style="color: #ffd600; font-size: 0.8rem;">Market Opportunity</div>
         </div>
     """, unsafe_allow_html=True)
-    st.progress(friction_pct)
+    st.progress(max(0.0, min(1.0, float(friction_pct))))
 
 # --- 7. VISUALIZATIONS ---
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
