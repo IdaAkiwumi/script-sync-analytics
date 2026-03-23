@@ -1,6 +1,6 @@
 """
 PROJECT: Script-Sync Analytics
-VERSION: 1.1.2
+VERSION: 1.1.5
 AUTHOR: Ida Akiwumi
 ROLE: Product Architect | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
@@ -17,7 +17,7 @@ IDEAL FOR:
 """
 
 __author__ = "Ida Akiwumi"
-__version__ = "1.1.2"
+__version__ = "1.1.5"
 __license__ = "Proprietary"
 __status__ = "Production / Portfolio"
 
@@ -26,7 +26,7 @@ import pandas as pd
 import plotly.express as px
 from textblob import TextBlob
 import os
-import ast  # Critical for parsing TMDB genre lists
+import ast 
 
 # --- 1. INITIALIZE STATE ---
 def init_state():
@@ -44,13 +44,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom Ida Akiwumi Brand CSS
 st.markdown("""
     <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
     
     .block-container {
-        padding-top: 2rem !important;
+        padding-top: 1.5rem !important;
         padding-bottom: 0rem !important;
     }
 
@@ -68,8 +67,15 @@ st.markdown("""
         margin-bottom: 15px;
     }
 
+    .metric-card {
+        background-color: #1e1e1e;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        font-family: 'Courier New', Courier, monospace;
+        border: 1px solid #333;
+    }
 
-    /* Custom styling for progress bars to match brand gold */
     .stProgress > div > div > div > div {
         background-color: #ffd600;
     }
@@ -80,34 +86,25 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 3. LOGIC: DATA ENGINE ---
-def analyze_sentiment(text):
-    return TextBlob(str(text)).sentiment.polarity
-
 @st.cache_data
 def load_placeholder_data():
     data = {
-        'Project': ['Soul Debt', 'Gone Ghost', 'Market Comp A', 'Market Comp B', 'Market Comp C', 'Market Comp D', 'Market Comp E'],
-        'Sentiment_Score': [0.75, 0.45, -0.20, 0.10, 0.55, -0.40, 0.25],
-        'Market_Potential': [94, 89, 40, 55, 70, 30, 65],
-        'Genre': ['Prestige Thriller', 'Action Comedy', 'Horror', 'Drama', 'Sci-Fi', 'Horror', 'Prestige Thriller'],
-        'Budget_Tier': ['High', 'Mid', 'Low', 'Mid', 'High', 'Low', 'Mid']
+        'Project': ['Soul Debt', 'Gone Ghost', 'Market Comp A', 'Market Comp B', 'Market Comp C'],
+        'Sentiment_Score': [0.75, 0.45, -0.20, 0.10, 0.30],
+        'Market_Potential': [94, 89, 40, 55, 60],
+        'Genre': ['Thriller', 'Comedy', 'Horror', 'Drama', 'Action'],
     }
     return pd.DataFrame(data)
 
 @st.cache_data
 def load_real_data():
-    """Attempts to load and merge data from the /data directory with defensive parsing."""
     try:
-        # Flexible Pathing for Local vs GitHub Deployment
         base_path = "data" if os.path.exists("data") else "script-sync-analytics/data"
         movies_path = os.path.join(base_path, "movie_database_movies_2026.csv")
         cast_path = os.path.join(base_path, "movie_database_cast_2026.csv")
         
         if os.path.exists(movies_path):
-            # Load with python engine to prevent buffer overflow on malformed lines
             m_df = pd.read_csv(movies_path, engine='python', on_bad_lines='skip')
-            
-            # Bridge TMDB raw columns to Script-Sync UI Names
             m_df = m_df.rename(columns={
                 'title': 'Project',
                 'vote_average': 'Sentiment_Score',
@@ -115,12 +112,14 @@ def load_real_data():
                 'genres': 'Genre'
             })
 
-            # THE NARRATIVE FIX: Extract Genre name from TMDB's complex list string
             def clean_genres(g):
                 try:
+                    if not g or pd.isna(g): return "Unknown"
                     if isinstance(g, str) and "[" in g:
                         items = ast.literal_eval(g)
                         return items[0]['name'] if items else "Other"
+                    if isinstance(g, str) and "," in g:
+                        return g.split(',')[0].strip()
                     return str(g)
                 except:
                     return "Misc"
@@ -128,18 +127,16 @@ def load_real_data():
             if 'Genre' in m_df.columns:
                 m_df['Genre'] = m_df['Genre'].apply(clean_genres)
 
-            # Talent Integration: Merge with cast database
             if os.path.exists(cast_path):
                 c_df = pd.read_csv(cast_path, engine='python', on_bad_lines='skip')
                 if 'id' in m_df.columns and 'id' in c_df.columns:
                     m_df = pd.merge(m_df, c_df[['id', 'name']], on='id', how='left').rename(columns={'name': 'Lead_Talent'})
             
-            # ROI Normalization: Scale TMDB 1-10 to Sentiment -1 to 1
             if 'Sentiment_Score' in m_df.columns and m_df['Sentiment_Score'].max() > 1:
                 m_df['Sentiment_Score'] = (m_df['Sentiment_Score'] - 5) / 5
                 
             return m_df
-    except Exception as e:
+    except Exception:
         return None
     return None
 
@@ -150,24 +147,16 @@ df_full = real_df if real_df is not None else load_placeholder_data()
 with st.sidebar:
     st.title("🎬 Strategy Controls")
     
-    if real_df is not None:
-        st.success("Connected to 2026 Market Intelligence")
-    else:
-        st.info("Using Proprietary Script Placeholders")
+    all_genres = sorted([str(g) for g in df_full['Genre'].unique() if pd.notna(g)])
+    default_selection = [g for g in ["Drama", "Comedy", "Action", "Thriller", "Horror"] if g in all_genres]
+    if not default_selection:
+        default_selection = all_genres[:5]
 
-    st.subheader("📊 Analytical Filters")
-    all_genres = df_full['Genre'].unique().tolist()
-    # Default to first 5 genres to keep the initial view focused
-    genre_filter = st.multiselect("Filter by Genre", all_genres, default=all_genres[:5])
+    genre_filter = st.multiselect("Filter by Primary Genre", all_genres, default=default_selection)
     
     st.markdown("---")
-    st.markdown("Follow me on:")
     st.markdown(f"LinkedIn → [Ida Akiwumi](https://www.linkedin.com/in/idaa11)")
-    
-    st.markdown(f"""
-        **Developed by Ida Akiwumi**,  
-        *Product Architect & Narrative Strategist*
-    """)
+    st.markdown(f"**Designed by Ida Akiwumi** \n*Product Architect*")
 
 # --- 5. DATA FILTERING LOGIC ---
 df = df_full[df_full['Genre'].isin(genre_filter)]
@@ -176,91 +165,74 @@ df = df_full[df_full['Genre'].isin(genre_filter)]
 st.markdown(f'''
     <div class="compact-header">
         <span>🎬 SCRIPT-SYNC ANALYTICS</span>
-        <span>STATUS: <span style="background:#ffd600; color:#000; padding:0 5px; border-radius:3px;">LIVE DATA</span></span>
+        <span>STATUS: <span style="background:#ffd600; color:#000; padding:0 5px; border-radius:3px;">LIVE MARKET DATA</span></span>
     </div>
 ''', unsafe_allow_html=True)
-
-st.markdown("### Translating Narrative Friction into Market ROI")
 
 # --- DYNAMIC METRIC CALCULATIONS ---
 if not df.empty:
     raw_sentiment = df['Sentiment_Score'].mean()
     sentiment_pct = (raw_sentiment + 1) / 2 
-    sentiment_label = "High" if raw_sentiment > 0.4 else "Moderate" if raw_sentiment > 0 else "Low"
+    avg_market = int(min(100, df['Market_Potential'].mean()))
     
-    avg_market_raw = df['Market_Potential'].mean()
-    avg_market = int(min(100, avg_market_raw))
-    market_pct = avg_market / 100
-    
-    count = len(df)
-    friction_pct = max(0.1, 1.0 - (count / 100)) 
-    saturation = "Low" if count < 10 else "Neutral" if count < 50 else "High"
+    # DYNAMIC FRICTION CALC: Ratio of selected data vs total dataset
+    saturation_ratio = len(df) / len(df_full)
+    friction_pct = max(0.05, min(0.95, 1.0 - saturation_ratio))
+    saturation_label = "Low" if saturation_ratio < 0.1 else "Neutral" if saturation_ratio < 0.3 else "High"
 else:
-    sentiment_pct, market_pct, friction_pct = 0, 0, 0
-    sentiment_label, avg_market, saturation = "N/A", 0, "N/A"
+    sentiment_pct, avg_market, friction_pct, saturation_label = 0, 0, 0, "N/A"
 
-# --- METRIC CARDS ---
 col1, col2, col3 = st.columns(3)
-
 with col1:
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Avg Sentiment ROI", sentiment_label, delta=f"{len(df)} Active")
+    st.metric("Avg Sentiment ROI", "High" if sentiment_pct > 0.6 else "Moderate" if sentiment_pct > 0.4 else "Neutral", delta=f"{len(df)} Projects")
     st.progress(max(0.0, min(1.0, sentiment_pct)))
-    st.markdown('</div>', unsafe_allow_html=True)
-
 with col2:
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Market Appetite", f"{avg_market}%", delta="Target")
-    st.progress(max(0.0, min(1.0, market_pct)))
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    st.metric("Market Appetite", f"{avg_market}%", delta="Global Target")
+    st.progress(avg_market/100 if avg_market > 0 else 0.0)
 with col3:
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Genre Friction", saturation, delta="Opportunity")
-    st.progress(max(0.0, min(1.0, friction_pct)))
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.metric("Genre Friction", saturation_label, delta="Market Opportunity")
+    st.progress(friction_pct)
 
 # --- 7. VISUALIZATIONS ---
-project_palette = px.colors.qualitative.Prism 
-
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
     fig_scatter = px.scatter(
-        df.head(200), 
-        x="Sentiment_Score", y="Market_Potential", 
-        size="Market_Potential", color="Project",
-        hover_data=["Genre"],
+        df.head(600), 
+        x="Sentiment_Score", 
+        y="Market_Potential", 
+        size="Market_Potential", 
+        color="Genre", 
+        hover_name="Project",
+        hover_data=["Lead_Talent", "Genre"] if "Lead_Talent" in df.columns else ["Genre"],
         template="plotly_dark",
-        color_discrete_sequence=project_palette 
+        size_max=40, 
+        height=700 
     )
-    fig_scatter.update_traces(marker=dict(opacity=1, line=dict(width=1.5, color='White')))
+    fig_scatter.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
     fig_scatter.update_layout(
+        showlegend=False, 
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=30, b=0),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        margin=dict(l=0, r=0, t=20, b=0)
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
 
 with tab2:
-    genre_counts = df['Genre'].value_counts().head(15).reset_index()
+    # REPAIRED: Shows ALL selected genres in the bar chart
+    genre_counts = df['Genre'].value_counts().reset_index()
     genre_counts.columns = ['Genre', 'Count']
     
     fig_bar = px.bar(
         genre_counts, x='Genre', y='Count', 
         color='Genre', template="plotly_dark",
-        title="Portfolio Saturation by Genre"
+        height=500,
+        title="Active Market Saturation (Selected Genres)"
     )
-    fig_bar.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)', 
-        paper_bgcolor='rgba(0,0,0,0)',
-        showlegend=False
-    )
+    fig_bar.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
     st.plotly_chart(fig_bar, use_container_width=True)
 
-with st.expander("📂 Raw Market Intelligence Data"):
+with st.expander("📂 View Full Intelligence Ledger"):
     st.dataframe(df, use_container_width=True)
 
-st.markdown("---")
-st.caption("Script-Sync Analytics v1.1.2 | Built with Python & Strategic Intent.")
+st.caption(f"Script-Sync Analytics v{__version__} | Strategic Intelligence by Ida Akiwumi.")
