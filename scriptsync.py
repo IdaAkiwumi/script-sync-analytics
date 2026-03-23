@@ -1,10 +1,30 @@
-# ... [Keep all your top-level docstrings and imports exactly as they are] ...
+"""
+PROJECT: Script-Sync Analytics
+VERSION: 1.0.0
+AUTHOR: Ida Akiwumi
+ROLE: Product Architect | Narrative Strategist | Lead Product Designer
+TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
+
+DESCRIPTION:
+A strategic ROI engine for the film and gaming industries. Script-Sync 
+translates narrative scripts and movie metadata into actionable data 
+visualizations, helping producers identify Blue Ocean market opportunities.
+
+IDEAL FOR:
+- Studio Executives & Greenlight Committees
+- Creative Operations & Narrative Strategy
+- Data Storytelling & Market Saturation Analysis
+"""
+
+__author__ = "Ida Akiwumi"
+__version__ = "1.0.0"
+__license__ = "Proprietary"
+__status__ = "Production / Portfolio"
 
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from textblob import TextBlob
-import time
 
 # --- 1. INITIALIZE STATE ---
 def init_state():
@@ -22,29 +42,36 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom Akiwumi-Standard CSS (Kept exactly as you wrote it)
+# Refined CSS: Balancing "Above the Fold" with breathing room
 st.markdown("""
     <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
     
+    .block-container {
+        padding-top: 2rem !important; /* Gave a little breathing room back */
+        padding-bottom: 0rem !important;
+    }
+
     .compact-header {
-        margin-top: 35px !important;
+        margin-top: 0px !important;
         font-family: 'Courier New', Courier, monospace;
         background-color: #262730; 
-        padding: 10px 20px; 
+        padding: 12px 20px; 
         border-radius: 4px;
         color: #ffd600; 
         border: 1px solid #ffd600;
         display: flex;
         justify-content: space-between;
+        font-size: 1rem;
+        margin-bottom: 10px;
     }
 
     .metric-card {
         background-color: #1e1e1e;
-        padding: 20px;
+        padding: 15px;
         border-radius: 8px;
         border-left: 10px solid #ffd600;
-        margin-bottom: 20px;
+        margin-bottom: 5px;
         font-family: 'Courier New', Courier, monospace;
     }
     
@@ -59,12 +86,13 @@ def analyze_sentiment(text):
 
 @st.cache_data
 def load_placeholder_data():
+    # Added more entries so the "Genre Distribution" bar chart actually shows differences
     data = {
-        'Project': ['Soul Debt', 'Gone Ghost', 'Market Comp A', 'Market Comp B', 'Market Comp C'],
-        'Sentiment_Score': [0.75, 0.45, -0.20, 0.10, 0.55],
-        'Market_Potential': [94, 89, 40, 55, 70],
-        'Genre': ['Prestige Thriller', 'Action Comedy', 'Horror', 'Drama', 'Sci-Fi'],
-        'Budget_Tier': ['High', 'Mid', 'Low', 'Mid', 'High']
+        'Project': ['Soul Debt', 'Gone Ghost', 'Market Comp A', 'Market Comp B', 'Market Comp C', 'Market Comp D', 'Market Comp E'],
+        'Sentiment_Score': [0.75, 0.45, -0.20, 0.10, 0.55, -0.40, 0.25],
+        'Market_Potential': [94, 89, 40, 55, 70, 30, 65],
+        'Genre': ['Prestige Thriller', 'Action Comedy', 'Horror', 'Drama', 'Sci-Fi', 'Horror', 'Prestige Thriller'],
+        'Budget_Tier': ['High', 'Mid', 'Low', 'Mid', 'High', 'Low', 'Mid']
     }
     return pd.DataFrame(data)
 
@@ -75,22 +103,19 @@ with st.sidebar:
     st.title("🎬 Strategy Controls")
     st.subheader("📊 Analytical Filters")
     
-    # FIX: We dynamically pull genres from the dataframe so the filter always matches the data
     all_genres = df_full['Genre'].unique().tolist()
     genre_filter = st.multiselect("Filter by Genre", all_genres, default=all_genres)
     
     st.markdown("---")
     st.markdown("Follow me on:")
-    # Cleaned up the LaTeX arrow to a standard markdown arrow for cleaner rendering
     st.markdown(f"LinkedIn → [Ida Akiwumi](https://www.linkedin.com/in/idaa11)")
     
     st.markdown(f"""
         **Developed by Ida Akiwumi**,  
-        *Product Architect & Narrative Strategist* Specializing in the intersection of code and story.
+        *Product Architect & Narrative Strategist*
     """)
 
 # --- 5. DATA FILTERING LOGIC ---
-# This ensures the rest of the app only sees what is selected
 df = df_full[df_full['Genre'].isin(genre_filter)]
 
 # --- 6. MAIN INTERFACE ---
@@ -101,42 +126,84 @@ st.markdown(f'''
     </div>
 ''', unsafe_allow_html=True)
 
+# Restored the missing subtitle
 st.markdown("### Translating Narrative Friction into Market ROI")
 
-# --- DATA VISUALIZATION SECTION ---
+# --- DYNAMIC METRIC CALCULATIONS ---
+if not df.empty:
+    avg_sentiment = df['Sentiment_Score'].mean()
+    sentiment_label = "High" if avg_sentiment > 0.4 else "Moderate" if avg_sentiment > 0 else "Low"
+    avg_market = int(df['Market_Potential'].mean())
+    market_label = f"{avg_market}%"
+    saturation = "Low" if len(df) < 3 else "Neutral" if len(df) < 6 else "High"
+else:
+    sentiment_label, market_label, saturation = "N/A", "0%", "N/A"
+
+# Metric Row
 col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Avg Sentiment ROI", "High", delta="+14% Portfolio")
+    st.metric("Avg Sentiment ROI", sentiment_label, delta=f"{len(df)} Active")
     st.markdown('</div>', unsafe_allow_html=True)
 with col2:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Market Appetite", f"{int(df['Market_Potential'].mean()) if not df.empty else 0}%", delta="Optimal")
+    st.metric("Market Appetite", market_label, delta="Optimal")
     st.markdown('</div>', unsafe_allow_html=True)
 with col3:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Genre Friction", "Low", delta="-5% Saturation")
+    st.metric("Genre Friction", saturation, delta="Saturation")
     st.markdown('</div>', unsafe_allow_html=True)
 
-st.subheader("Narrative Archetype Performance")
+# --- 7. VISUALIZATIONS ---
 
-# FIX: Expanded the palette to ensure high contrast between 5+ genres 
-# while staying in the "Luxe Gold/Dark" aesthetic.
-akiwumi_palette = ['#ffd600', '#ffffff', '#ffaa00', '#888888', '#444444', '#b8860b']
+# FIXED: Brighter, consistent Brand Yellow
+genre_color_map = {
+    "Prestige Thriller": "#FFD600", # Vivid Brand Gold
+    "Action Comedy": "#FF1493",    # Deep Pink
+    "Horror": "#00F5D4",           # Teal
+    "Drama": "#FF9F1C",            # Orange
+    "Sci-Fi": "#00BBFF"            # Cyan
+}
 
-fig = px.scatter(
-    df, x="Sentiment_Score", y="Market_Potential", 
-    size="Market_Potential", color="Genre",
-    hover_name="Project", template="plotly_dark",
-    color_discrete_sequence=akiwumi_palette
-)
+tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
-# Added a touch of "Senior UX" polish to the chart layout
-fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+with tab1:
+    fig_scatter = px.scatter(
+        df, x="Sentiment_Score", y="Market_Potential", 
+        size="Market_Potential", color="Genre",
+        hover_name="Project", template="plotly_dark",
+        color_discrete_map=genre_color_map
+    )
+    # Removing dark overlays to ensure the #FFD600 pops
+    fig_scatter.update_traces(marker=dict(opacity=1, line=dict(width=1, color='White')))
+    fig_scatter.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)', 
+        paper_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=0, r=0, t=30, b=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    st.plotly_chart(fig_scatter, use_container_width=True)
 
-st.plotly_chart(fig, use_container_width=True)
+with tab2:
+    # GENRE BREAKDOWN BAR CHART
+    genre_counts = df['Genre'].value_counts().reset_index()
+    genre_counts.columns = ['Genre', 'Count']
+    
+    fig_bar = px.bar(
+        genre_counts, x='Genre', y='Count', 
+        color='Genre', template="plotly_dark",
+        color_discrete_map=genre_color_map,
+        title="Portfolio Saturation by Genre"
+    )
+    fig_bar.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)', 
+        paper_bgcolor='rgba(0,0,0,0)',
+        showlegend=False,
+        yaxis=dict(tick0=0, dtick=1) # Force integer steps for small counts
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
 
-# --- TABLE VIEW FOR EXECUTIVES ---
+# --- TABLE VIEW ---
 with st.expander("📂 Raw Market Intelligence Data"):
     st.dataframe(df, use_container_width=True)
 
