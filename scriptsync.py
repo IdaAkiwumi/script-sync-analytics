@@ -42,7 +42,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Refined CSS
+# Refined CSS: Removed redundant border-left (static progress bar lookalike)
 st.markdown("""
     <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
@@ -63,16 +63,14 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         font-size: 1rem;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
     }
 
-    .metric-card {
-        background-color: #1e1e1e;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 10px solid #ffd600;
-        margin-bottom: 5px;
-        font-family: 'Courier New', Courier, monospace;
+    
+
+    /* Custom styling for progress bars to match brand gold */
+    .stProgress > div > div > div > div {
+        background-color: #ffd600;
     }
     
     .stMetric { color: #ffd600 !important; }
@@ -129,33 +127,43 @@ st.markdown("### Translating Narrative Friction into Market ROI")
 
 # --- DYNAMIC METRIC CALCULATIONS ---
 if not df.empty:
-    avg_sentiment = df['Sentiment_Score'].mean()
-    sentiment_label = "High" if avg_sentiment > 0.4 else "Moderate" if avg_sentiment > 0 else "Low"
+    raw_sentiment = df['Sentiment_Score'].mean()
+    sentiment_pct = (raw_sentiment + 1) / 2 
+    sentiment_label = "High" if raw_sentiment > 0.4 else "Moderate" if raw_sentiment > 0 else "Low"
+    
     avg_market = int(df['Market_Potential'].mean())
-    market_label = f"{avg_market}%"
-    saturation = "Low" if len(df) < 3 else "Neutral" if len(df) < 6 else "High"
+    market_pct = avg_market / 100
+    
+    count = len(df)
+    friction_pct = max(0.1, 1.0 - (count / 10)) 
+    saturation = "Low" if count < 3 else "Neutral" if count < 6 else "High"
 else:
-    sentiment_label, market_label, saturation = "N/A", "0%", "N/A"
+    sentiment_pct, market_pct, friction_pct = 0, 0, 0
+    sentiment_label, avg_market, saturation = "N/A", 0, "N/A"
 
+# --- METRIC CARDS ---
 col1, col2, col3 = st.columns(3)
+
 with col1:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     st.metric("Avg Sentiment ROI", sentiment_label, delta=f"{len(df)} Active")
+    st.progress(sentiment_pct)
     st.markdown('</div>', unsafe_allow_html=True)
+
 with col2:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Market Appetite", market_label, delta="Optimal")
+    st.metric("Market Appetite", f"{avg_market}%", delta="Target")
+    st.progress(market_pct)
     st.markdown('</div>', unsafe_allow_html=True)
+
 with col3:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Genre Friction", saturation, delta="Saturation")
+    st.metric("Genre Friction", saturation, delta="Opportunity")
+    st.progress(friction_pct)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 7. VISUALIZATIONS ---
 
-# Global Color Palettes for High Diversity
-# Palette 1: Unique Colors for individual Dots (Scatter)
-# Palette 2: Genre Mapping (Bar Chart)
 project_palette = px.colors.qualitative.Prism 
 genre_color_map = {
     "Prestige Thriller": "#FFD600",
@@ -168,15 +176,13 @@ genre_color_map = {
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
-    # Set 'color' to 'Project' instead of 'Genre' to ensure every dot is a different hue
     fig_scatter = px.scatter(
         df, x="Sentiment_Score", y="Market_Potential", 
         size="Market_Potential", color="Project",
-        hover_data=["Genre"], # Still show the Genre in the tooltip
+        hover_data=["Genre"],
         template="plotly_dark",
         color_discrete_sequence=project_palette 
     )
-    
     fig_scatter.update_traces(marker=dict(opacity=1, line=dict(width=1.5, color='White')))
     fig_scatter.update_layout(
         plot_bgcolor='rgba(0,0,0,0)', 
