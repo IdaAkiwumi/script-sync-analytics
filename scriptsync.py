@@ -1,6 +1,6 @@
 """
 PROJECT: Script-Sync Analytics
-VERSION: 1.1.0
+VERSION: 1.1.2
 AUTHOR: Ida Akiwumi
 ROLE: Product Architect | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
@@ -17,7 +17,7 @@ IDEAL FOR:
 """
 
 __author__ = "Ida Akiwumi"
-__version__ = "1.1.0"
+__version__ = "1.1.2"
 __license__ = "Proprietary"
 __status__ = "Production / Portfolio"
 
@@ -26,64 +26,7 @@ import pandas as pd
 import plotly.express as px
 from textblob import TextBlob
 import os
-
-
-import ast # Added for genre parsing
-
-# ... (Keep your existing UI/CSS code exactly as is) ...
-
-@st.cache_data
-def load_real_data():
-    """Attempts to load and merge data from the /data directory."""
-    try:
-        # 1. Flexible Pathing for Local vs GitHub
-        base_path = "data" if os.path.exists("data") else "script-sync-analytics/data"
-        movies_path = os.path.join(base_path, "movie_database_movies_2026.csv")
-        cast_path = os.path.join(base_path, "movie_database_cast_2026.csv")
-        
-        if os.path.exists(movies_path):
-            # 2. Robust CSV loading (skips malformed lines)
-            m_df = pd.read_csv(movies_path, engine='python', on_bad_lines='skip')
-            
-            # Bridge column names
-            m_df = m_df.rename(columns={
-                'title': 'Project',
-                'vote_average': 'Sentiment_Score',
-                'popularity': 'Market_Potential',
-                'genres': 'Genre'
-            })
-
-            # 3. Genre Cleaning Logic (Unpacks TMDB format)
-            def clean_genres(g):
-                try:
-                    if isinstance(g, str) and "[" in g:
-                        items = ast.literal_eval(g)
-                        return items[0]['name'] if items else "Unknown"
-                    return str(g)
-                except:
-                    return "Misc"
-            
-            if 'Genre' in m_df.columns:
-                m_df['Genre'] = m_df['Genre'].apply(clean_genres)
-
-            # Optional: Merge with cast
-            if os.path.exists(cast_path):
-                c_df = pd.read_csv(cast_path, engine='python', on_bad_lines='skip')
-                m_df = pd.merge(m_df, c_df[['id', 'name']], on='id', how='left').rename(columns={'name': 'Lead_Talent'})
-            
-            # Normalize Sentiment Score
-            if m_df['Sentiment_Score'].max() > 1:
-                m_df['Sentiment_Score'] = (m_df['Sentiment_Score'] - 5) / 5
-                
-            return m_df
-    except Exception as e:
-        # Silently log error or use st.sidebar.error(e) for debugging
-        return None
-    return None
-
-# ... (Keep the rest of your script unchanged) ...
-
-
+import ast  # Critical for parsing TMDB genre lists
 
 # --- 1. INITIALIZE STATE ---
 def init_state():
@@ -101,6 +44,7 @@ st.set_page_config(
     layout="wide"
 )
 
+# Custom Ida Akiwumi Brand CSS
 st.markdown("""
     <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
@@ -124,6 +68,7 @@ st.markdown("""
         margin-bottom: 15px;
     }
 
+
     /* Custom styling for progress bars to match brand gold */
     .stProgress > div > div > div > div {
         background-color: #ffd600;
@@ -136,7 +81,7 @@ st.markdown("""
 
 # --- 3. LOGIC: DATA ENGINE ---
 def analyze_sentiment(text):
-    return TextBlob(text).sentiment.polarity
+    return TextBlob(str(text)).sentiment.polarity
 
 @st.cache_data
 def load_placeholder_data():
@@ -151,16 +96,18 @@ def load_placeholder_data():
 
 @st.cache_data
 def load_real_data():
-    """Attempts to load and merge data from the /data directory."""
+    """Attempts to load and merge data from the /data directory with defensive parsing."""
     try:
-        # Paths based on your screenshot
-        movies_path = "data/movie_database_movies_2026.csv"
-        cast_path = "data/movie_database_cast_2026.csv"
+        # Flexible Pathing for Local vs GitHub Deployment
+        base_path = "data" if os.path.exists("data") else "script-sync-analytics/data"
+        movies_path = os.path.join(base_path, "movie_database_movies_2026.csv")
+        cast_path = os.path.join(base_path, "movie_database_cast_2026.csv")
         
         if os.path.exists(movies_path):
-            m_df = pd.read_csv(movies_path)
+            # Load with python engine to prevent buffer overflow on malformed lines
+            m_df = pd.read_csv(movies_path, engine='python', on_bad_lines='skip')
             
-            # Bridge column names to match your original UI logic
+            # Bridge TMDB raw columns to Script-Sync UI Names
             m_df = m_df.rename(columns={
                 'title': 'Project',
                 'vote_average': 'Sentiment_Score',
@@ -168,13 +115,27 @@ def load_real_data():
                 'genres': 'Genre'
             })
 
-            # Optional: Merge with cast if it exists
-            if os.path.exists(cast_path):
-                c_df = pd.read_csv(cast_path)
-                m_df = pd.merge(m_df, c_df[['id', 'name']], on='id', how='left').rename(columns={'name': 'Lead_Talent'})
+            # THE NARRATIVE FIX: Extract Genre name from TMDB's complex list string
+            def clean_genres(g):
+                try:
+                    if isinstance(g, str) and "[" in g:
+                        items = ast.literal_eval(g)
+                        return items[0]['name'] if items else "Other"
+                    return str(g)
+                except:
+                    return "Misc"
             
-            # Normalize Sentiment Score (assuming 1-10 scale in TMDB data)
-            if m_df['Sentiment_Score'].max() > 1:
+            if 'Genre' in m_df.columns:
+                m_df['Genre'] = m_df['Genre'].apply(clean_genres)
+
+            # Talent Integration: Merge with cast database
+            if os.path.exists(cast_path):
+                c_df = pd.read_csv(cast_path, engine='python', on_bad_lines='skip')
+                if 'id' in m_df.columns and 'id' in c_df.columns:
+                    m_df = pd.merge(m_df, c_df[['id', 'name']], on='id', how='left').rename(columns={'name': 'Lead_Talent'})
+            
+            # ROI Normalization: Scale TMDB 1-10 to Sentiment -1 to 1
+            if 'Sentiment_Score' in m_df.columns and m_df['Sentiment_Score'].max() > 1:
                 m_df['Sentiment_Score'] = (m_df['Sentiment_Score'] - 5) / 5
                 
             return m_df
@@ -183,7 +144,6 @@ def load_real_data():
     return None
 
 # --- 4. SIDEBAR STUDIO CONTROLS ---
-# Check if real data exists, otherwise default to placeholders
 real_df = load_real_data()
 df_full = real_df if real_df is not None else load_placeholder_data()
 
@@ -196,8 +156,8 @@ with st.sidebar:
         st.info("Using Proprietary Script Placeholders")
 
     st.subheader("📊 Analytical Filters")
-    
     all_genres = df_full['Genre'].unique().tolist()
+    # Default to first 5 genres to keep the initial view focused
     genre_filter = st.multiselect("Filter by Genre", all_genres, default=all_genres[:5])
     
     st.markdown("---")
@@ -228,13 +188,12 @@ if not df.empty:
     sentiment_pct = (raw_sentiment + 1) / 2 
     sentiment_label = "High" if raw_sentiment > 0.4 else "Moderate" if raw_sentiment > 0 else "Low"
     
-    # Scale market potential to 0-100 for the progress bar
     avg_market_raw = df['Market_Potential'].mean()
     avg_market = int(min(100, avg_market_raw))
     market_pct = avg_market / 100
     
     count = len(df)
-    friction_pct = max(0.1, 1.0 - (count / 100)) # Adjusted for larger datasets
+    friction_pct = max(0.1, 1.0 - (count / 100)) 
     saturation = "Low" if count < 10 else "Neutral" if count < 50 else "High"
 else:
     sentiment_pct, market_pct, friction_pct = 0, 0, 0
@@ -262,21 +221,13 @@ with col3:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 7. VISUALIZATIONS ---
-
 project_palette = px.colors.qualitative.Prism 
-genre_color_map = {
-    "Prestige Thriller": "#FFD600",
-    "Action Comedy": "#FF1493",
-    "Horror": "#00F5D4",
-    "Drama": "#FF9F1C",
-    "Sci-Fi": "#00BBFF"
-}
 
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
     fig_scatter = px.scatter(
-        df.head(200), # Cap for performance on large files
+        df.head(200), 
         x="Sentiment_Score", y="Market_Potential", 
         size="Market_Potential", color="Project",
         hover_data=["Genre"],
@@ -312,4 +263,4 @@ with st.expander("📂 Raw Market Intelligence Data"):
     st.dataframe(df, use_container_width=True)
 
 st.markdown("---")
-st.caption("Script-Sync Analytics v1.1.0 | Built with Python & Strategic Intent.")
+st.caption("Script-Sync Analytics v1.1.2 | Built with Python & Strategic Intent.")
