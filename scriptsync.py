@@ -42,13 +42,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Refined CSS: Balancing "Above the Fold" with breathing room
+# Refined CSS
 st.markdown("""
     <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
     
     .block-container {
-        padding-top: 2rem !important; /* Gave a little breathing room back */
+        padding-top: 2rem !important;
         padding-bottom: 0rem !important;
     }
 
@@ -86,7 +86,6 @@ def analyze_sentiment(text):
 
 @st.cache_data
 def load_placeholder_data():
-    # Added more entries so the "Genre Distribution" bar chart actually shows differences
     data = {
         'Project': ['Soul Debt', 'Gone Ghost', 'Market Comp A', 'Market Comp B', 'Market Comp C', 'Market Comp D', 'Market Comp E'],
         'Sentiment_Score': [0.75, 0.45, -0.20, 0.10, 0.55, -0.40, 0.25],
@@ -126,7 +125,6 @@ st.markdown(f'''
     </div>
 ''', unsafe_allow_html=True)
 
-# Restored the missing subtitle
 st.markdown("### Translating Narrative Friction into Market ROI")
 
 # --- DYNAMIC METRIC CALCULATIONS ---
@@ -139,7 +137,6 @@ if not df.empty:
 else:
     sentiment_label, market_label, saturation = "N/A", "0%", "N/A"
 
-# Metric Row
 col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
@@ -156,26 +153,31 @@ with col3:
 
 # --- 7. VISUALIZATIONS ---
 
-# FIXED: Brighter, consistent Brand Yellow
+# Global Color Palettes for High Diversity
+# Palette 1: Unique Colors for individual Dots (Scatter)
+# Palette 2: Genre Mapping (Bar Chart)
+project_palette = px.colors.qualitative.Prism 
 genre_color_map = {
-    "Prestige Thriller": "#FFD600", # Vivid Brand Gold
-    "Action Comedy": "#FF1493",    # Deep Pink
-    "Horror": "#00F5D4",           # Teal
-    "Drama": "#FF9F1C",            # Orange
-    "Sci-Fi": "#00BBFF"            # Cyan
+    "Prestige Thriller": "#FFD600",
+    "Action Comedy": "#FF1493",
+    "Horror": "#00F5D4",
+    "Drama": "#FF9F1C",
+    "Sci-Fi": "#00BBFF"
 }
 
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
+    # Set 'color' to 'Project' instead of 'Genre' to ensure every dot is a different hue
     fig_scatter = px.scatter(
         df, x="Sentiment_Score", y="Market_Potential", 
-        size="Market_Potential", color="Genre",
-        hover_name="Project", template="plotly_dark",
-        color_discrete_map=genre_color_map
+        size="Market_Potential", color="Project",
+        hover_data=["Genre"], # Still show the Genre in the tooltip
+        template="plotly_dark",
+        color_discrete_sequence=project_palette 
     )
-    # Removing dark overlays to ensure the #FFD600 pops
-    fig_scatter.update_traces(marker=dict(opacity=1, line=dict(width=1, color='White')))
+    
+    fig_scatter.update_traces(marker=dict(opacity=1, line=dict(width=1.5, color='White')))
     fig_scatter.update_layout(
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
@@ -185,7 +187,6 @@ with tab1:
     st.plotly_chart(fig_scatter, use_container_width=True)
 
 with tab2:
-    # GENRE BREAKDOWN BAR CHART
     genre_counts = df['Genre'].value_counts().reset_index()
     genre_counts.columns = ['Genre', 'Count']
     
@@ -199,11 +200,10 @@ with tab2:
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
         showlegend=False,
-        yaxis=dict(tick0=0, dtick=1) # Force integer steps for small counts
+        yaxis=dict(tick0=0, dtick=1)
     )
     st.plotly_chart(fig_bar, use_container_width=True)
 
-# --- TABLE VIEW ---
 with st.expander("📂 Raw Market Intelligence Data"):
     st.dataframe(df, use_container_width=True)
 
