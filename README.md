@@ -23,9 +23,9 @@ To provide a high-level "Manager View," the dashboard calculates three proprieta
 
 ---
 
-### ✨ Why Script-Sync Analytics?
+### ✨ Why Script Sync Analytics?
 
-In a high-stakes production environment, "gut feeling" isn't enough to greenlight a project. **Script-Sync** provides the analytical rigor required for strategic creative expansion by providing:
+In a high-stakes production environment, "gut feeling" isn't enough to greenlight a project. **Script Sync** provides the analytical rigor required for strategic creative expansion by providing:
 
 * **Sentiment ROI Mapping:** Uses NLP logic to score narrative themes against historical market success.
 * **Genre Friction Analysis:** Visualizes market saturation vs. audience appetite, identifying "Blue Ocean" opportunities for original IP (Intellectual Property).
