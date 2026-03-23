@@ -163,6 +163,8 @@ with st.sidebar:
         - [TMDB Movie Metadata](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)
         - [2023 930k Movie Dataset](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies)
         - [Comprehensive TMDB Reviews](https://www.kaggle.com/datasets/rishabhkumar2003/the-movie-database-tmdb-comprehensive-dataset)
+        
+        **Sourced March 2026.**
         """)
     # --- DATA SOURCE INJECTION END ---
     
@@ -276,7 +278,7 @@ with col3:
         <div class="metric-card">
             <div style="color: #888; font-size: 0.9rem;">Genre Friction</div>
             <div style="color: {fric_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{fric_label}</div>
-            <div style="color: #ffd600; font-size: 0.8rem;">Market Opportunity</div>
+            <div style="color: #ffd600; font-size: 0.8rem;">Visualizing Market Gap</div>
         </div>
     """, unsafe_allow_html=True)
     st.progress(max(0.0, min(1.0, float(friction_pct))))
