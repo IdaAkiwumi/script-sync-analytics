@@ -330,7 +330,7 @@ with tab1:
         range_x=[-0.05, 0.9], # Cleanly shows 5.0 to 9.5 ratings
         template="plotly_dark",
         size_max=35, 
-        height=700 
+        height=400 
     )
     
     fig_scatter.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
@@ -353,7 +353,7 @@ with tab2:
     fig_bar = px.bar(
         genre_counts, x='Genre', y='Count', 
         color='Genre', template="plotly_dark",
-        height=500,
+        height=400,
         title="Active Market Saturation (Selected Genres)"
     )
     fig_bar.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
