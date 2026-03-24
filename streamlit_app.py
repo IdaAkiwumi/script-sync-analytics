@@ -380,11 +380,11 @@ tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
     display_df = df.copy()
-
-    # Create a comma-separated string of the selected genres
-    # This ensures that even when the sidebar is hidden (like in print), 
-    # the viewer knows exactly what they are looking at.
     active_genres_str = ", ".join(genre_filter) if genre_filter else "All Genres"
+
+    # 1 & 2. Dynamic Ceiling Logic
+    y_max = display_df['Popularity_Score'].max()
+    y_upper_limit = y_max * 1.15 if y_max > 0 else 100 # Fallback for safety
 
     fig_scatter = px.scatter(
         display_df, 
@@ -400,9 +400,10 @@ with tab1:
             "Lead_Talent": True if "Lead_Talent" in display_df.columns else False
         },
         range_x=[-0.05, 0.9], 
+        range_y=[0, y_upper_limit], # Apply dynamic ceiling
         template="plotly_dark",
         size_max=35, 
-        height=500 
+        height=450 
     )
     
     fig_scatter.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
@@ -411,13 +412,13 @@ with tab1:
         showlegend=False, 
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
+        # 3. Top margin increased to 35 to prevent label clipping
         margin=dict(l=0, r=0, t=5, b=0), 
         xaxis_title="Sentiment ROI",
         yaxis_title="Market Appetite Index"
     )
     
-    # --- UPDATED METADATA LINE ---
-    # This combines the competitor count and the active genre list
+    # Text line
     st.markdown(f"""
         <p style="color:#888; font-size:0.8rem; margin-bottom:10px; padding-left:2px;">
             Showing <strong>{len(display_df)}</strong> market competitors in: 
