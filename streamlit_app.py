@@ -344,7 +344,7 @@ with tab1:
         xaxis_title="Sentiment ROI",
         yaxis_title="Market Appetite (Product Score Volatility Index)"
     )
-    st.plotly_chart(fig_scatter, use_container_width=True)
+    st.plotly_chart(fig_scatter, width="stretch")
 
 with tab2:
     # REPAIRED: Shows ALL selected genres in the bar chart
@@ -358,9 +358,9 @@ with tab2:
         title="Active Market Saturation (Selected Genres)"
     )
     fig_bar.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig_bar, width="stretch")
 
 with st.expander("📂 View Full Intelligence Ledger"):
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width="stretch")
 
 st.caption(f"Genre Sync Analytics v{__version__} | Strategic Intelligence by Ida Akiwumi.")
