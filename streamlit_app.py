@@ -220,7 +220,7 @@ if not df.empty:
     # This ranks the current genre heat against the full dataset distribution
     # providing a beautiful spread from 5% to 95%.
     
-    import numpy as np
+   
     
     # Get the 90th percentile of your filtered genre
     genre_90th = df['Popularity_Score'].quantile(0.90)
