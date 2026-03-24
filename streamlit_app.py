@@ -402,7 +402,7 @@ with tab1:
         range_x=[-0.05, 0.9], 
         template="plotly_dark",
         size_max=35, 
-        height=400 
+        height=500 
     )
     
     fig_scatter.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
@@ -419,7 +419,7 @@ with tab1:
     # --- UPDATED METADATA LINE ---
     # This combines the competitor count and the active genre list
     st.markdown(f"""
-        <p style="color:#888; font-size:0.8rem; margin-bottom:-15px; padding-left:2px;">
+        <p style="color:#888; font-size:0.8rem; margin-bottom:10px; padding-left:2px;">
             Showing <strong>{len(display_df)}</strong> market competitors in: 
             <span style="color:#dc3545;">{active_genres_str}</span>
         </p>
