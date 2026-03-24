@@ -147,20 +147,27 @@ def load_real_data():
 real_df = load_real_data()
 df_full = real_df if real_df is not None else load_placeholder_data()
 
+# Ensure we track the active scenario name
+if "active_scenario_name" not in st.session_state:
+    st.session_state.active_scenario_name = "Default (Industry Standard)"
+
 with st.sidebar:
     st.title("🎬 Strategy Controls")
+    
+    # Visual indicator of current state
+    st.markdown(f"**Current View:** `{st.session_state.active_scenario_name}`")
     
     all_genres = sorted([str(g) for g in df_full['Genre'].unique() if pd.notna(g)])
     
     # 4a. Load Existing Filter logic
     if st.session_state.saved_filters:
-        # We use an 'on_change' callback or manual check to update state
         def load_scenario():
             selection = st.session_state["scenario_loader"]
             if selection != "-- Select --":
-                # Inject saved list into the multiselect's state
                 st.session_state["genre_selector"] = st.session_state.saved_filters[selection]
-                # Reset the loader so it doesn't 'lock' the multiselect
+                st.session_state.active_scenario_name = selection
+                # Trigger a toast notification for instant feedback
+                st.toast(f"✅ Loaded Scenario: {selection}", icon="🎬")
                 st.session_state["scenario_loader"] = "-- Select --"
 
         st.selectbox(
@@ -174,10 +181,15 @@ with st.sidebar:
     if "genre_selector" not in st.session_state:
         st.session_state["genre_selector"] = [g for g in ["Drama", "Comedy", "Action", "Thriller", "Horror"] if g in all_genres]
 
+    def on_filter_change():
+        # If user manually changes filters, indicate the view is now custom
+        st.session_state.active_scenario_name = "Custom (Modified)"
+
     genre_filter = st.multiselect(
         "Filter by Primary Genre", 
         all_genres, 
-        key="genre_selector"
+        key="genre_selector",
+        on_change=on_filter_change
     )
     
     # 4c. Save Current Filter logic
