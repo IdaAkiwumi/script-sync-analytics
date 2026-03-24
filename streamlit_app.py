@@ -313,13 +313,7 @@ with col3:
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
-    # SHIFT LOGIC: Starts at 5/10 mark. 
-    # Added a 'clip' to Popularity to prevent outliers from ruining the scale
     display_df = df.head(600).copy()
-    
-    # Optional: If your chart looks 'squashed' at the bottom because of one big movie, 
-    # uncomment the line below to cap the visual height.
-    # display_df['Popularity_Score'] = display_df['Popularity_Score'].clip(upper=display_df['Popularity_Score'].quantile(0.95))
 
     fig_scatter = px.scatter(
         display_df, 
@@ -334,7 +328,7 @@ with tab1:
             "Genre": True,
             "Lead_Talent": True if "Lead_Talent" in display_df.columns else False
         },
-        range_x=[-0.05, 0.9], # Cleanly shows 5.0 to 9.5 ratings
+        range_x=[-0.05, 0.9], 
         template="plotly_dark",
         size_max=35, 
         height=400 
@@ -348,12 +342,14 @@ with tab1:
         paper_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=0, r=0, t=20, b=0),
         xaxis_title="Sentiment ROI",
-        yaxis_title="Market Appetite (Product Score Volatility Index)"
+        yaxis_title="Market Appetite Index"
     )
-    st.plotly_chart(fig_scatter, width="stretch")
+    
+    st.caption(f"Showing top {len(display_df)} of {len(df)} market competitors in selected genres.")
+    # ONLY ONE PLOTLY COMMAND HERE:
+    st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter")
 
 with tab2:
-    # REPAIRED: Shows ALL selected genres in the bar chart
     genre_counts = df['Genre'].value_counts().reset_index()
     genre_counts.columns = ['Genre', 'Count']
     
@@ -364,9 +360,11 @@ with tab2:
         title="Active Market Saturation (Selected Genres)"
     )
     fig_bar.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-    st.plotly_chart(fig_bar, width="stretch")
+    # FIXED WIDTH HERE:
+    st.plotly_chart(fig_bar, use_container_width=True, key="genre_distribution_bar")
 
 with st.expander("📂 View Full Intelligence Ledger"):
-    st.dataframe(df, width="stretch")
+    # FIXED WIDTH HERE:
+    st.dataframe(df, use_container_width=True)
 
 st.caption(f"Genre Sync Analytics v{__version__} | Strategic Intelligence by Ida Akiwumi.")
