@@ -34,6 +34,9 @@ def init_state():
         st.session_state.data_loaded = False
     if "analysis_results" not in st.session_state:
         st.session_state.analysis_results = None
+    # Storage for saved scenarios
+    if "saved_filters" not in st.session_state:
+        st.session_state.saved_filters = {}
 
 init_state()
 
@@ -144,6 +147,8 @@ def load_real_data():
 real_df = load_real_data()
 df_full = real_df if real_df is not None else load_placeholder_data()
 
+
+
 with st.sidebar:
     st.title("🎬 Strategy Controls")
     
@@ -153,6 +158,7 @@ with st.sidebar:
         default_selection = all_genres[:5]
 
     genre_filter = st.multiselect("Filter by Primary Genre", all_genres, default=default_selection)
+    
     
     
     # --- DATA SOURCE INJECTION START ---
