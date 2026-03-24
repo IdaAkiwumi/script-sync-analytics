@@ -17,7 +17,7 @@ IDEAL FOR:
 """
 
 __author__ = "Ida Akiwumi"
-__version__ = "1.1.5"
+__version__ = "1.0.0"
 __license__ = "Proprietary"
 __status__ = "Production / Portfolio"
 
