@@ -27,6 +27,7 @@ import plotly.express as px
 import os
 import ast 
 import numpy as np  # Ensure this is here for the 90th percentile math
+import json
 
 # --- 1. INITIALIZE STATE ---
 def init_state():
@@ -148,57 +149,88 @@ def load_real_data():
 real_df = load_real_data()
 df_full = real_df if real_df is not None else load_placeholder_data()
 
-# Ensure we track the active scenario name
 if "active_scenario_name" not in st.session_state:
     st.session_state.active_scenario_name = "Default (Industry Standard)"
 
+# Control the open/close state of the expander
+if "management_open" not in st.session_state:
+    st.session_state.management_open = False
+
 with st.sidebar:
     st.title("🎬 Strategy Controls")
-    
-    # Visual indicator of current state
     st.markdown(f"**Current View:** `{st.session_state.active_scenario_name}`")
     
     all_genres = sorted([str(g) for g in df_full['Genre'].unique() if pd.notna(g)])
     
-    # 4a. Load Existing Filter logic
+    # --- 4a. AUTO-CLOSE IMPORT ---
+    with st.expander("📤 Import Scenarios", expanded=st.session_state.management_open):
+        uploaded_file = st.file_uploader("Upload .json file", type="json")
+        if uploaded_file:
+            try:
+                imported_data = json.load(uploaded_file)
+                if isinstance(imported_data, dict):
+                    new_keys = [k for k in imported_data.keys() if k not in st.session_state.saved_filters]
+                    if new_keys:
+                        st.session_state.saved_filters.update(imported_data)
+                        st.toast(f"Imported {len(new_keys)} scenarios!", icon="📂")
+                        # Close the expander and refresh
+                        st.session_state.management_open = False
+                        st.rerun() 
+                else:
+                    st.error("Invalid JSON structure.")
+            except Exception as e:
+                st.error(f"Upload error: {e}")
+
+    # --- 4b. SELECTION & FILTERING ---
     if st.session_state.saved_filters:
-        def load_scenario():
-            selection = st.session_state["scenario_loader"]
-            if selection != "-- Select --":
-                st.session_state["genre_selector"] = st.session_state.saved_filters[selection]
-                st.session_state.active_scenario_name = selection
-                # Trigger a toast notification for instant feedback
-                st.toast(f"✅ Loaded Scenario: {selection}", icon="🎬")
-                st.session_state["scenario_loader"] = "-- Select --"
+        def load_scenario_callback():
+            sel = st.session_state["scenario_loader"]
+            if sel != "-- Select --":
+                st.session_state["genre_selector"] = st.session_state.saved_filters[sel]
+                st.session_state.active_scenario_name = sel
+                st.toast(f"View Switched: {sel}")
 
         st.selectbox(
             "📂 Load Saved Scenario", 
             ["-- Select --"] + list(st.session_state.saved_filters.keys()),
             key="scenario_loader",
-            on_change=load_scenario
+            on_change=load_scenario_callback
         )
 
-    # 4b. The Main Filter
+    # The Main Multiselect
     if "genre_selector" not in st.session_state:
         st.session_state["genre_selector"] = [g for g in ["Drama", "Comedy", "Action", "Thriller", "Horror"] if g in all_genres]
-
-    def on_filter_change():
-        # If user manually changes filters, indicate the view is now custom
-        st.session_state.active_scenario_name = "Custom (Modified)"
 
     genre_filter = st.multiselect(
         "Filter by Primary Genre", 
         all_genres, 
         key="genre_selector",
-        on_change=on_filter_change
+        on_change=lambda: st.session_state.update({"active_scenario_name": "Custom (Modified)"})
     )
     
-    # 4c. Save Current Filter logic
-    scenario_name = st.text_input("💾 Save Filter State (in session)", placeholder="e.g., Q1 Sci-Fi Push")
-    if st.button("Confirm Save"):
+    # --- 4c. EXTERNAL MANAGEMENT BUTTONS ---
+    
+    # Save Current
+    scenario_name = st.text_input("Scenario Name", placeholder="e.g., Q1 Sci-Fi Push")
+    if st.button("💾 Confirm Save to Session", use_container_width=True):
         if scenario_name and genre_filter:
             st.session_state.saved_filters[scenario_name] = genre_filter
+            st.session_state.active_scenario_name = scenario_name
             st.success(f"Saved '{scenario_name}'")
+            st.rerun()
+
+    # Export & Clear (Only show if data exists)
+    if st.session_state.saved_filters:
+        st.download_button(
+            label="📥 Export Scenarios (.json)",
+            file_name="genre_sync_scenarios.json",
+            mime="application/json",
+            data=json.dumps(st.session_state.saved_filters),
+            use_container_width=True
+        )
+        if st.button("🗑️ Clear All", use_container_width=True, type="secondary"):
+            st.session_state.saved_filters = {}
+            st.session_state.active_scenario_name = "Default (Industry Standard)"
             st.rerun()
     
     st.markdown("""
