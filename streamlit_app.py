@@ -196,13 +196,13 @@ st.markdown(f'''
 with st.expander("ℹ️ STRATEGY GUIDE: How to use Script Sync"):
     st.markdown("""
     ### **Objective**
-    Identify **Blue Ocean** opportunities by finding genres with **High ROI** but **Low Friction**.
+    Identify **Blue Ocean** opportunities by finding genres with **High ROI** and **High Market Opportunity**.
     
     ### **User Journey**
     1.  **Filter by Primary Genre:** Use the sidebar to select your target market (e.g., *Thriller* or *Sci-Fi*).
-    2.  **Evaluate Market Appetite:** Check if the audience is 'hungry' for this content (High Appetite = Green).
-    3.  **Assess Genre Friction:** Low friction indicates a market gap where your story can stand out.
-    4.  **Analyze Comps:** Hover over the bubbles in the **Narrative Performance** tab to see which existing projects and talent are driving the current market sentiment.
+    2.  **Evaluate Market Appetite:** Check the "Heat Index"—is the global audience currently 'hungry' for this content?
+    3.  **Assess Market Opportunity:** A high bar here indicates a **Blue Ocean** gap where your narrative can stand out without fighting "Red Ocean" saturation.
+    4.  **Analyze Comps:** Hover over the bubbles in the **Narrative Performance** tab to see the specific projects and talent currently defining your selected market's ROI.
     """)
 
 # --- DYNAMIC METRIC CALCULATIONS ---
