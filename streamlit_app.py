@@ -24,9 +24,9 @@ __status__ = "Production / Portfolio"
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from textblob import TextBlob
 import os
 import ast 
+import numpy as np  # Ensure this is here for the 90th percentile math
 
 # --- 1. INITIALIZE STATE ---
 def init_state():
@@ -192,6 +192,8 @@ st.markdown(f'''
         <span>STATUS: <span style="background:#ffd600; color:#000; padding:0 5px; border-radius:3px;">SPRING 2026 MARKET DATA</span></span>
     </div>
 ''', unsafe_allow_html=True)
+
+
 # --- QUICK START GUIDE ---
 with st.expander("ℹ️ STRATEGY GUIDE: How to use Genre Sync"):
     st.markdown("""
@@ -204,7 +206,11 @@ with st.expander("ℹ️ STRATEGY GUIDE: How to use Genre Sync"):
     3.  **Assess Market Opportunity:** A high bar here indicates a **Blue Ocean** gap where your narrative can stand out without fighting "Red Ocean" saturation.
     4.  **Analyze Comps:** Hover over the bubbles in the **Narrative Performance** tab to see the specific projects and talent currently defining your selected market's ROI.
     """)
-
+# --- EMPTY STATE GUARD ---
+if df.empty:
+    st.warning("⚠️ Strategy Engine Standby: Please select at least one genre in the sidebar to activate market analysis.")
+    st.stop() # This prevents the rest of the code from running and crashing
+    
 # --- DYNAMIC METRIC CALCULATIONS ---
 if not df.empty:
     raw_sentiment = df['Sentiment_Score'].mean()
