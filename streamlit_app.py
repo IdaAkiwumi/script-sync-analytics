@@ -138,7 +138,7 @@ def load_real_data():
             return m_df
     except Exception:
         return None
-    return None
+
 
 # --- 4. SIDEBAR STUDIO CONTROLS ---
 real_df = load_real_data()
