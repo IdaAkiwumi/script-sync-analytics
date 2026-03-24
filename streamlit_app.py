@@ -85,6 +85,25 @@ st.markdown("""
     
     .stMetric { color: #ffd600 !important; }
     footer {visibility: hidden;}
+    
+    @media print {
+    /* Hide the sidebar and the top navigation bar */
+    [data-testid="stSidebar"], [data-testid="stHeader"], .stAppHeader {
+        display: none !important;
+    }
+    
+    /* Expand the main content to fill the page */
+    .main .block-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Ensure Plotly charts take up the full width of the PDF */
+    .js-plotly-plot, .plotly {
+        width: 100% !important;
+    }
+}
     </style>
 """, unsafe_allow_html=True)
 
@@ -378,6 +397,11 @@ tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 with tab1:
     display_df = df.copy()
 
+    # Create a comma-separated string of the selected genres
+    # This ensures that even when the sidebar is hidden (like in print), 
+    # the viewer knows exactly what they are looking at.
+    active_genres_str = ", ".join(genre_filter) if genre_filter else "All Genres"
+
     fig_scatter = px.scatter(
         display_df, 
         x="Sentiment_Score", 
@@ -403,12 +427,20 @@ with tab1:
         showlegend=False, 
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=5, b=0), # Adjusted for tight fit
+        margin=dict(l=0, r=0, t=5, b=0), 
         xaxis_title="Sentiment ROI",
         yaxis_title="Market Appetite Index"
     )
     
-    st.markdown(f'<p style="color:#888; font-size:0.8rem; margin-bottom:-15px; padding-left:2px;">Showing {len(display_df)} of {len(df)} market competitors...</p>', unsafe_allow_html=True)
+    # --- UPDATED METADATA LINE ---
+    # This combines the competitor count and the active genre list
+    st.markdown(f"""
+        <p style="color:#888; font-size:0.8rem; margin-bottom:-15px; padding-left:2px;">
+            Showing <strong>{len(display_df)}</strong> market competitors in: 
+            <span style="color:#dc3545;">{active_genres_str}</span>
+        </p>
+    """, unsafe_allow_html=True)
+    
     st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter")
 
 with tab2:
@@ -430,3 +462,4 @@ with st.expander("📂 View Full Intelligence Ledger"):
     st.dataframe(df, use_container_width=True)
 
 st.caption(f"Genre Sync Analytics v{__version__} | Strategic Intelligence by Ida Akiwumi.")
+
