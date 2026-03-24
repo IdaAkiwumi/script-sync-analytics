@@ -1,12 +1,12 @@
 """
-PROJECT: Script Sync Analytics
+PROJECT: Genre Sync Analytics
 VERSION: 1.0.0
 AUTHOR: Ida Akiwumi
 ROLE: Product Architect | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
 
 DESCRIPTION:
-A strategic ROI engine for the film and gaming industries. Script Sync 
+A strategic ROI engine for the film and gaming industries. Genre Sync 
 translates narrative scripts and movie metadata into actionable data 
 visualizations, helping producers identify Blue Ocean market opportunities.
 
@@ -39,7 +39,7 @@ init_state()
 
 # --- 2. UI SETUP & BRANDING ---
 st.set_page_config(
-    page_title="Script Sync Analytics | Designed by Ida Akiwumi", 
+    page_title="Genre Sync Analytics | Designed by Ida Akiwumi", 
     page_icon="🎬",
     layout="wide"
 )
@@ -188,12 +188,12 @@ df = df_full[df_full['Genre'].isin(genre_filter)]
 # --- 6. MAIN INTERFACE ---
 st.markdown(f'''
     <div class="compact-header">
-        <span>🎬 SCRIPT SYNC ANALYTICS</span>
+        <span>🎬 GENRE SYNC ANALYTICS</span>
         <span>STATUS: <span style="background:#ffd600; color:#000; padding:0 5px; border-radius:3px;">SPRING 2026 MARKET DATA</span></span>
     </div>
 ''', unsafe_allow_html=True)
 # --- QUICK START GUIDE ---
-with st.expander("ℹ️ STRATEGY GUIDE: How to use Script Sync"):
+with st.expander("ℹ️ STRATEGY GUIDE: How to use Genre Sync"):
     st.markdown("""
     ### **Objective**
     Identify **Blue Ocean** opportunities by finding genres with **High ROI** and **High Market Opportunity**.
@@ -363,4 +363,4 @@ with tab2:
 with st.expander("📂 View Full Intelligence Ledger"):
     st.dataframe(df, use_container_width=True)
 
-st.caption(f"Script Sync Analytics v{__version__} | Strategic Intelligence by Ida Akiwumi.")
+st.caption(f"Genre Sync Analytics v{__version__} | Strategic Intelligence by Ida Akiwumi.")
