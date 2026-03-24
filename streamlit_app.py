@@ -346,7 +346,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #888; font-size: 0.9rem;">Avg Sentiment ROI</div>
+            <div style="color: #E0E0E0; font-size: 0.9rem;">Avg Sentiment ROI</div>
             <div style="color: {sent_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{sent_label}</div>
             <div style="color: #ffd600; font-size: 0.8rem;">{len(df)} Projects</div>
         </div>
@@ -356,7 +356,7 @@ with col1:
 with col2:
     st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #888; font-size: 0.9rem;">Market Appetite</div>
+            <div style="color: #E0E0E0; font-size: 0.9rem;">Market Appetite</div>
             <div style="color: {app_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{avg_market}%</div>
             <div style="color: #ffd600; font-size: 0.8rem;">Global Target</div>
         </div>
@@ -366,7 +366,7 @@ with col2:
 with col3:
     st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #888; font-size: 0.9rem;">Genre Market Opportunity</div>
+            <div style="color: #8E0E0E0; font-size: 0.9rem;">Genre Market Opportunity</div>
             <div style="color: {opp_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{opp_label}</div>
             <div style="color: #ffd600; font-size: 0.8rem;">Blue Ocean Potential</div>
         </div>
