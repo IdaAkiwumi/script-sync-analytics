@@ -201,11 +201,14 @@ with st.sidebar:
             st.success(f"Saved '{scenario_name}'")
             st.rerun()
     
-    st.info("""
-    **Architect's Note:** This dashboard visualizes *Market Volatility* and *Sentiment Trends*. 
+    st.markdown("""
+        <div class="sidebar-note">
+            <strong>Architect's Note:</strong> This dashboard visualizes <em>Market Volatility</em> and <em>Sentiment Trends</em>.
     For specific ROI projections, these metrics should be cross-referenced 
-    with production budget tiers and IP-attachment status.
-    """)
+    with production budget tiers and IP status.
+    
+   </div>
+    """, unsafe_allow_html=True)
     
     # --- DATA SOURCE INJECTION ---
     with st.expander("📚 Data Sources & Intelligence"):
