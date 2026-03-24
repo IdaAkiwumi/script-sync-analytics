@@ -310,6 +310,16 @@ with col3:
     st.progress(max(0.0, min(1.0, float(opportunity_pct))))
 
 # --- 7. VISUALIZATIONS ---
+
+# Injecting extra CSS here to specifically target the tab padding 
+# and the gap between caption and chart.
+st.markdown("""
+    <style>
+    [data-testid="stTabPanel"] { padding-top: 0rem !important; }
+    .stPlotlyChart { margin-top: -10px !important; }
+    </style>
+""", unsafe_allow_html=True)
+
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
@@ -340,14 +350,12 @@ with tab1:
         showlegend=False, 
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=2, b=0),
+        margin=dict(l=0, r=0, t=5, b=0), # Adjusted for tight fit
         xaxis_title="Sentiment ROI",
         yaxis_title="Market Appetite Index"
     )
     
-    st.markdown(f'<p style="color:#888; font-size:0.8rem; margin-bottom:-20px;">Showing {len(display_df)} of {len(df)} market competitors...</p>', unsafe_allow_html=True)
-    st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter")
-    # ONLY ONE PLOTLY COMMAND HERE:
+    st.markdown(f'<p style="color:#888; font-size:0.8rem; margin-bottom:-15px; padding-left:2px;">Showing {len(display_df)} of {len(df)} market competitors...</p>', unsafe_allow_html=True)
     st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter")
 
 with tab2:
@@ -360,8 +368,8 @@ with tab2:
         height=400,
         title="Active Market Saturation (Selected Genres)"
     )
-    fig_bar.update_layout(margin=dict(l=0, r=0, t=22, b=0),showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-    # FIXED WIDTH HERE:
+    # Reduced top margin from 22 to 10 to tighten space under the tab
+    fig_bar.update_layout(margin=dict(l=0, r=0, t=10, b=0), showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
     st.plotly_chart(fig_bar, use_container_width=True, key="genre_distribution_bar")
 
 with st.expander("📂 View Full Intelligence Ledger"):
