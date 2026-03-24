@@ -313,7 +313,7 @@ with col3:
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
-    display_df = df.head(600).copy()
+    display_df = df.copy()
 
     fig_scatter = px.scatter(
         display_df, 
@@ -345,7 +345,7 @@ with tab1:
         yaxis_title="Market Appetite Index"
     )
     
-    st.caption(f"Showing top {len(display_df)} of {len(df)} market competitors in selected genres.")
+    st.caption(f"Showing {len(display_df)} of {len(df)} market competitors in selected genres.")
     # ONLY ONE PLOTLY COMMAND HERE:
     st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter")
 
