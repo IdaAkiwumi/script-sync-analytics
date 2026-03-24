@@ -252,10 +252,9 @@ df = df_full[df_full['Genre'].isin(genre_filter)]
 # --- 6. MAIN INTERFACE ---
 st.markdown(f'''
     <div class="compact-header">
-        <span>🎬 GENRE SYNC ANALYTICS</span>
+        <span>🎬 GENRE SYNC: {st.session_state.active_scenario_name.upper()}</span>
         <span>STATUS: <span style="background:#ffd600; color:#000; padding:0 5px; border-radius:3px;">SPRING 2026 MARKET DATA</span></span>
     </div>
-    
 ''', unsafe_allow_html=True)
 
 
