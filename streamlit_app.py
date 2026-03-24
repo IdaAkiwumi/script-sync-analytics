@@ -340,12 +340,13 @@ with tab1:
         showlegend=False, 
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=20, b=0),
+        margin=dict(l=0, r=0, t=2, b=0),
         xaxis_title="Sentiment ROI",
         yaxis_title="Market Appetite Index"
     )
     
-    st.caption(f"Showing {len(display_df)} of {len(df)} market competitors in selected genres.")
+    st.markdown(f'<p style="color:#888; font-size:0.8rem; margin-bottom:-20px;">Showing {len(display_df)} of {len(df)} market competitors...</p>', unsafe_allow_html=True)
+    st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter")
     # ONLY ONE PLOTLY COMMAND HERE:
     st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter")
 
@@ -359,7 +360,7 @@ with tab2:
         height=400,
         title="Active Market Saturation (Selected Genres)"
     )
-    fig_bar.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+    fig_bar.update_layout(margin=dict(l=0, r=0, t=22, b=0),showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
     # FIXED WIDTH HERE:
     st.plotly_chart(fig_bar, use_container_width=True, key="genre_distribution_bar")
 
