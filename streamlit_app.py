@@ -147,22 +147,54 @@ def load_real_data():
 real_df = load_real_data()
 df_full = real_df if real_df is not None else load_placeholder_data()
 
-
-
 with st.sidebar:
     st.title("🎬 Strategy Controls")
     
     all_genres = sorted([str(g) for g in df_full['Genre'].unique() if pd.notna(g)])
-    default_selection = [g for g in ["Drama", "Comedy", "Action", "Thriller", "Horror"] if g in all_genres]
-    if not default_selection:
-        default_selection = all_genres[:5]
+    
+    # 4a. Load Existing Filter logic
+    if st.session_state.saved_filters:
+        # We use an 'on_change' callback or manual check to update state
+        def load_scenario():
+            selection = st.session_state["scenario_loader"]
+            if selection != "-- Select --":
+                # Inject saved list into the multiselect's state
+                st.session_state["genre_selector"] = st.session_state.saved_filters[selection]
+                # Reset the loader so it doesn't 'lock' the multiselect
+                st.session_state["scenario_loader"] = "-- Select --"
 
-    genre_filter = st.multiselect("Filter by Primary Genre", all_genres, default=default_selection)
+        st.selectbox(
+            "📂 Load Saved Scenario", 
+            ["-- Select --"] + list(st.session_state.saved_filters.keys()),
+            key="scenario_loader",
+            on_change=load_scenario
+        )
+
+    # 4b. The Main Filter
+    if "genre_selector" not in st.session_state:
+        st.session_state["genre_selector"] = [g for g in ["Drama", "Comedy", "Action", "Thriller", "Horror"] if g in all_genres]
+
+    genre_filter = st.multiselect(
+        "Filter by Primary Genre", 
+        all_genres, 
+        key="genre_selector"
+    )
     
+    # 4c. Save Current Filter logic
+    scenario_name = st.text_input("💾 Save Filter State", placeholder="e.g., Q1 Sci-Fi Push")
+    if st.button("Confirm Save"):
+        if scenario_name and genre_filter:
+            st.session_state.saved_filters[scenario_name] = genre_filter
+            st.success(f"Saved '{scenario_name}'")
+            st.rerun()
     
+    st.info("""
+    **Architect's Note:** This dashboard visualizes *Market Volatility* and *Sentiment Trends*. 
+    For specific ROI projections, these metrics should be cross-referenced 
+    with production budget tiers and IP-attachment status.
+    """)
     
-    # --- DATA SOURCE INJECTION START ---
-    st.markdown("---")
+    # --- DATA SOURCE INJECTION ---
     with st.expander("📚 Data Sources & Intelligence"):
         st.caption("This engine aggregates market metadata from:")
         st.markdown("""
@@ -172,12 +204,7 @@ with st.sidebar:
         
         **Sourced March 2026.**
         """)
-    # --- DATA SOURCE INJECTION END ---
-    st.info("""
-    **Architect's Note:** This dashboard visualizes *Market Volatility* and *Sentiment Trends*. 
-    For specific ROI projections, these metrics should be cross-referenced 
-    with production budget tiers and IP-attachment status.
-    """)
+
     
     st.markdown("---")
     st.markdown("Follow me on:")
