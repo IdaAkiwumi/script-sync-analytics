@@ -193,7 +193,7 @@ with st.sidebar:
     )
     
     # 4c. Save Current Filter logic
-    scenario_name = st.text_input("💾 Save Filter State", placeholder="e.g., Q1 Sci-Fi Push")
+    scenario_name = st.text_input("💾 Save Filter State (in session)", placeholder="e.g., Q1 Sci-Fi Push")
     if st.button("Confirm Save"):
         if scenario_name and genre_filter:
             st.session_state.saved_filters[scenario_name] = genre_filter
@@ -236,6 +236,7 @@ st.markdown(f'''
         <span>🎬 GENRE SYNC ANALYTICS</span>
         <span>STATUS: <span style="background:#ffd600; color:#000; padding:0 5px; border-radius:3px;">SPRING 2026 MARKET DATA</span></span>
     </div>
+    
 ''', unsafe_allow_html=True)
 
 
@@ -362,6 +363,13 @@ st.markdown("""
     <style>
     [data-testid="stTabPanel"] { padding-top: 0rem !important; }
     .stPlotlyChart { margin-top: -10px !important; }
+    
+    /* Move Toast to the left side near sidebar */
+[data-testid="stToastContainer"] {
+    left: 40px !important;
+    right: auto !important;
+    bottom: 0px !important;
+}
     </style>
 """, unsafe_allow_html=True)
 
