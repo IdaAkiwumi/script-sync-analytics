@@ -7,7 +7,7 @@ TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
 
 DESCRIPTION:
 A strategic ROI engine for the film and gaming industries. Genre Sync 
-translates narrative scripts and movie metadata into actionable data 
+translates movie metadata into actionable data 
 visualizations, helping producers identify Blue Ocean market opportunities.
 
 IDEAL FOR:
@@ -99,7 +99,7 @@ def load_placeholder_data():
 @st.cache_data
 def load_real_data():
     try:
-        base_path = "data" if os.path.exists("data") else "script-sync-analytics/data"
+        base_path = "data" if os.path.exists("data") else "genre-sync-analytics/data"
         movies_path = os.path.join(base_path, "movie_database_movies_2026.csv")
         cast_path = os.path.join(base_path, "movie_database_cast_2026.csv")
         
