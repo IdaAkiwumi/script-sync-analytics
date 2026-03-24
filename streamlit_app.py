@@ -51,14 +51,14 @@ st.markdown("""
     <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
     
-    .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 0rem !important;
+    /* High-contrast Slate for WCAG compliance on dark background */
+    .metric-caption {
+        color: #A3AABF; 
+        font-size: 0.9rem;
+        font-family: 'Courier New', Courier, monospace;
     }
 
     .compact-header {
-        margin-top: 0px !important;
-        font-family: 'Courier New', Courier, monospace;
         background-color: #262730; 
         padding: 12px 20px; 
         border-radius: 4px;
@@ -74,36 +74,18 @@ st.markdown("""
         background-color: #1e1e1e;
         padding: 15px;
         border-radius: 8px;
-        margin-bottom: 5px;
-        font-family: 'Courier New', Courier, monospace;
         border: 1px solid #333;
     }
 
-    .stProgress > div > div > div > div {
-        background-color: #ffd600;
-    }
-    
-    .stMetric { color: #ffd600 !important; }
-    footer {visibility: hidden;}
-    
     @media print {
-    /* Hide the sidebar and the top navigation bar */
-    [data-testid="stSidebar"], [data-testid="stHeader"], .stAppHeader {
-        display: none !important;
+        [data-testid="stSidebar"], [data-testid="stHeader"] { display: none !important; }
+        
+        /* Force Metric Card text to black for white paper */
+        .metric-caption, .stMetricValue { color: #000000 !important; }
+        .metric-card { background-color: #ffffff !important; border: 1px solid #000 !important; }
+        
+        .main .block-container { max-width: 100% !important; padding: 0 !important; }
     }
-    
-    /* Expand the main content to fill the page */
-    .main .block-container {
-        max-width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    /* Ensure Plotly charts take up the full width of the PDF */
-    .js-plotly-plot, .plotly {
-        width: 100% !important;
-    }
-}
     </style>
 """, unsafe_allow_html=True)
 
@@ -346,7 +328,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #E0E0E0; font-size: 0.9rem;">Avg Sentiment ROI</div>
+            <div class="metric-caption">Avg Sentiment ROI</div>
             <div style="color: {sent_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{sent_label}</div>
             <div style="color: #ffd600; font-size: 0.8rem;">{len(df)} Projects</div>
         </div>
@@ -356,7 +338,7 @@ with col1:
 with col2:
     st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #E0E0E0; font-size: 0.9rem;">Market Appetite</div>
+            <div class="metric-caption">Market Appetite</div>
             <div style="color: {app_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{avg_market}%</div>
             <div style="color: #ffd600; font-size: 0.8rem;">Global Target</div>
         </div>
@@ -366,7 +348,7 @@ with col2:
 with col3:
     st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #8E0E0E0; font-size: 0.9rem;">Genre Market Opportunity</div>
+            <div class="metric-caption">Genre Market Opportunity</div>
             <div style="color: {opp_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{opp_label}</div>
             <div style="color: #ffd600; font-size: 0.8rem;">Blue Ocean Potential</div>
         </div>
