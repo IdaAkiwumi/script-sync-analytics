@@ -152,9 +152,9 @@ df_full = real_df if real_df is not None else load_placeholder_data()
 if "active_scenario_name" not in st.session_state:
     st.session_state.active_scenario_name = "Default (Industry Standard)"
 
-# Control the open/close state of the expander
-if "management_open" not in st.session_state:
-    st.session_state.management_open = False
+# 1. Decoupled state for the expander
+if "import_expanded" not in st.session_state:
+    st.session_state.import_expanded = False
 
 with st.sidebar:
     st.title("🎬 Strategy Controls")
@@ -162,24 +162,29 @@ with st.sidebar:
     
     all_genres = sorted([str(g) for g in df_full['Genre'].unique() if pd.notna(g)])
     
-    # --- 4a. AUTO-CLOSE IMPORT ---
-    with st.expander("📤 Import Scenarios", expanded=st.session_state.management_open):
-        uploaded_file = st.file_uploader("Upload .json file", type="json")
-        if uploaded_file:
+    # --- 4a. IMPORT DROPDOWN (AUTO-CLOSING) ---
+    def handle_import():
+        file = st.session_state.scenario_uploader
+        if file is not None:
             try:
-                imported_data = json.load(uploaded_file)
+                imported_data = json.load(file)
                 if isinstance(imported_data, dict):
-                    new_keys = [k for k in imported_data.keys() if k not in st.session_state.saved_filters]
-                    if new_keys:
-                        st.session_state.saved_filters.update(imported_data)
-                        st.toast(f"Imported {len(new_keys)} scenarios!", icon="📂")
-                        # Close the expander and refresh
-                        st.session_state.management_open = False
-                        st.rerun() 
+                    st.session_state.saved_filters.update(imported_data)
+                    st.toast(f"Imported {len(imported_data)} scenarios!", icon="📂")
+                    # FORCE CLOSE: Set state to False and clear the uploader
+                    st.session_state.import_expanded = False
                 else:
                     st.error("Invalid JSON structure.")
             except Exception as e:
                 st.error(f"Upload error: {e}")
+
+    with st.expander("📤 Import Scenarios", expanded=st.session_state.import_expanded):
+        st.file_uploader(
+            "Upload .json file", 
+            type="json", 
+            key="scenario_uploader", 
+            on_change=handle_import
+        )
 
     # --- 4b. SELECTION & FILTERING ---
     if st.session_state.saved_filters:
@@ -209,7 +214,7 @@ with st.sidebar:
     )
     
     # --- 4c. EXTERNAL MANAGEMENT BUTTONS ---
-    
+
     # Save Current
     scenario_name = st.text_input("Scenario Name", placeholder="e.g., Q1 Sci-Fi Push")
     if st.button("💾 Confirm Save to Session", use_container_width=True):
@@ -219,7 +224,7 @@ with st.sidebar:
             st.success(f"Saved '{scenario_name}'")
             st.rerun()
 
-    # Export & Clear (Only show if data exists)
+    # Export & Clear (Now outside the dropdown)
     if st.session_state.saved_filters:
         st.download_button(
             label="📥 Export Scenarios (.json)",
