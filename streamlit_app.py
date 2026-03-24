@@ -229,26 +229,27 @@ if not df.empty:
     # Ensure a healthy minimum and maximum for UI impact
     avg_market = max(2, min(100, avg_market))
     
-    # 2. Blue Ocean / Friction Logic
+    # 2. Genre Market Opportunity Logic
     # We measure 'Market Gap' (The Opportunity)
     saturation_ratio = len(df) / len(df_full)
-    blue_ocean_pct = max(0.05, min(0.95, 1.0 - saturation_ratio))
+    opportunity_pct = max(0.05, min(0.95, 1.0 - saturation_ratio))
     
-    # Unified Label & Color Mapping (Consolidated to prevent drift)
-    if blue_ocean_pct > 0.85: # 0-15% Saturation
-        fric_label = "Low"     # Low Friction
-        fric_color = "#28a745" # Green (Good)
-    elif blue_ocean_pct > 0.60: # 15-40% Saturation
-        fric_label = "Neutral" 
-        fric_color = "#ffc107" # Yellow
-    else:                      # > 40% Saturation
-        fric_label = "High"    # High Friction
-        fric_color = "#dc3545" # Red (Crowded)
+    # Labeling: High Opportunity = Blue Ocean (Green)
+    if opportunity_pct > 0.80: 
+        opp_label = "High"      # Blue Ocean
+        opp_color = "#28a745"   # Green
+    elif opportunity_pct > 0.50: 
+        opp_label = "Moderate" 
+        opp_color = "#ffc107"   # Yellow
+    else:                      
+        opp_label = "Low"       # Saturated Market
+        opp_color = "#dc3545"   # Red
         
-    friction_pct = blue_ocean_pct # The bar now represents the "Market Gap"
+   
 else:
-    sentiment_pct, avg_market, friction_pct, saturation_label, saturation_ratio = 0, 0, 0, "N/A", 0
-    fric_label, fric_color = "N/A", "#888"
+    # Set default values for empty state to prevent NameErrors
+    sentiment_pct, avg_market, opportunity_pct = 0, 0, 0
+    opp_label, opp_color = "N/A", "#888"
 
 # --- DYNAMIC COLOR MAPPING (Sentiment & Appetite only) ---
 # 1. Sentiment Color
@@ -295,12 +296,12 @@ with col2:
 with col3:
     st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #888; font-size: 0.9rem;">Genre Friction</div>
-            <div style="color: {fric_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{fric_label}</div>
-            <div style="color: #ffd600; font-size: 0.8rem;">Visualizing Market Gap</div>
+            <div style="color: #888; font-size: 0.9rem;">Genre Market Opportunity</div>
+            <div style="color: {opp_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{opp_label}</div>
+            <div style="color: #ffd600; font-size: 0.8rem;">Blue Ocean Potential</div>
         </div>
     """, unsafe_allow_html=True)
-    st.progress(max(0.0, min(1.0, float(friction_pct))))
+    st.progress(max(0.0, min(1.0, float(opportunity_pct))))
 
 # --- 7. VISUALIZATIONS ---
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
