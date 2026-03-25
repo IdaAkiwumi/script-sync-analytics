@@ -157,12 +157,10 @@ def process_and_merge():
     final_df = final_df.drop_duplicates(subset=['Project'], keep='first')
 
     # Ensure we keep all columns you need for the UI
-    cols = ['id', 'Project', 'Genre', 'Sentiment_Score', 'Popularity_Score']
-    # If the original TMDB has overview/runtime, you might want to keep those too:
-    final_df = final_df[[c for c in final_df.columns if c in cols or c == 'id']].head(10000)
+    final_df = final_df.head(10000) # Only keep the row limit, not the column limit
 
     final_df.to_csv(TARGET_MOVIES, index=False)
-    print(f"🚀 MISSION COMPLETE: {len(final_df)} unique projects synced. - prep_data.py:165")
+    print(f"🚀 MISSION COMPLETE: {len(final_df)} unique projects synced. - prep_data.py:163")
 
 if __name__ == "__main__":
     refresh_flag = "--refresh" in sys.argv
