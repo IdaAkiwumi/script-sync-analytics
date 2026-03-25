@@ -9,7 +9,12 @@ import sys
 DATA_DIR = "data"
 DATASETS = [
     "asaniczka/tmdb-movies-dataset-2023-930k-movies",
-    "shivamb/netflix-shows"
+    "shivamb/netflix-shows",
+    "tmdb/tmdb-movie-metadata",                        # TMDB 5000 (9 MB)
+    
+   # Mid-Size / Comprehensive (15MB - 152MB)
+    "rishabhkumar2003/the-movie-database-tmdb-comprehensive-dataset" # Rishabh (~15 MB)
+
    # "asaniczka/trending-youtube-videos-113-countries"
 ]
 
@@ -20,9 +25,9 @@ def setup_env():
         os.makedirs(DATA_DIR)
     try:
         kaggle.api.authenticate()
-        print("🔑 Kaggle Authenticated. - prep_data.py:23")
+        print("🔑 Kaggle Authenticated. - prep_data.py:28")
     except Exception as e:
-        print(f"❌ Auth Error: Check C:/Users/kemia/.kaggle/kaggle.json - prep_data.py:25")
+        print(f"❌ Auth Error: Check C:/Users/kemia/.kaggle/kaggle.json - prep_data.py:30")
 
 def fetch_data(force_refresh=False):
     """Fetches from Kaggle if data is missing, stale (>7 days), or forced."""
@@ -30,31 +35,31 @@ def fetch_data(force_refresh=False):
     current_time = time.time()
     
     if force_refresh:
-        print("🔄 Force Refresh active. Bypassing freshness checks... - prep_data.py:33")
+        print("🔄 Force Refresh active. Bypassing freshness checks... - prep_data.py:38")
     else:
         if os.path.exists(TARGET_MOVIES):
             file_age = current_time - os.path.getmtime(TARGET_MOVIES)
             if file_age < seven_days_in_seconds:
-                print(f"⏭️  Intelligence is fresh (updated < 7 days ago). Skipping Kaggle sync. - prep_data.py:38")
+                print(f"⏭️  Intelligence is fresh (updated < 7 days ago). Skipping Kaggle sync. - prep_data.py:43")
                 return
 
     tmdb_raw = glob.glob(os.path.join(DATA_DIR, "*TMDB*.csv"))
     nf_raw = os.path.exists(os.path.join(DATA_DIR, "netflix_titles.csv"))
     
     if force_refresh or not tmdb_raw or not nf_raw:
-        print("📡 Fetching fresh streams from Kaggle... - prep_data.py:45")
+        print("📡 Fetching fresh streams from Kaggle... - prep_data.py:50")
         for slug in DATASETS:
             try:
                 kaggle.api.dataset_download_files(slug, path=DATA_DIR, unzip=True)
-                print(f"✅ Synced {slug} - prep_data.py:49")
+                print(f"✅ Synced {slug} - prep_data.py:54")
             except Exception as e:
-                print(f"⚠️ Skip/Error: {e} - prep_data.py:51")
+                print(f"⚠️ Skip/Error: {e} - prep_data.py:56")
     else:
-        print("⏭️  Raw Intelligence detected locally. Proceeding to merge. - prep_data.py:53")
+        print("⏭️  Raw Intelligence detected locally. Proceeding to merge. - prep_data.py:58")
 
 def cleanup_raw_data():
     """Removes heavy raw Kaggle CSVs and ZIPs to keep the workspace lean."""
-    print("🧹 Cleaning up raw intelligence files... - prep_data.py:57")
+    print("🧹 Cleaning up raw intelligence files... - prep_data.py:62")
     patterns = ["*TMDB*.csv", "netflix_titles.csv", "*videos*.csv", "*.zip"]
     
     for pattern in patterns:
@@ -62,9 +67,9 @@ def cleanup_raw_data():
         for f in files:
             try:
                 os.remove(f)
-                print(f"🗑️ Deleted: {os.path.basename(f)} - prep_data.py:65")
+                print(f"🗑️ Deleted: {os.path.basename(f)} - prep_data.py:70")
             except Exception as e:
-                print(f"⚠️ Could not delete {f}: {e} - prep_data.py:67")
+                print(f"⚠️ Could not delete {f}: {e} - prep_data.py:72")
 
 def process_and_merge():
     all_frames = []
@@ -163,12 +168,12 @@ def process_and_merge():
                 if 'id' not in temp_df.columns: temp_df['id'] = range(len(temp_df))
 
                 all_frames.append(temp_df)
-                print(f"📊 Harmonized {filename} - prep_data.py:166")
+                print(f"📊 Harmonized {filename} - prep_data.py:171")
         except Exception as e:
-            print(f"⚠️ Could not process {filename}: {e} - prep_data.py:168")
+            print(f"⚠️ Could not process {filename}: {e} - prep_data.py:173")
 
     if not all_frames:
-        print("❌ No data found to merge. - prep_data.py:171")
+        print("❌ No data found to merge. - prep_data.py:176")
         return
 
     # --- 5. FINAL MERGE & REFINEMENT ---
@@ -199,7 +204,7 @@ def process_and_merge():
 
 
     final_df.to_csv(TARGET_MOVIES, index=False)
-    print(f"🚀 MISSION COMPLETE: {len(final_df)} unique projects synced. - prep_data.py:202")
+    print(f"🚀 MISSION COMPLETE: {len(final_df)} unique projects synced. - prep_data.py:207")
 
 if __name__ == "__main__":
     refresh_flag = "--refresh" in sys.argv
