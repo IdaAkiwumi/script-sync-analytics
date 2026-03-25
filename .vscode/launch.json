@@ -8,10 +8,12 @@
             "module": "streamlit",
             "args": [
                 "run",
-                "${file}",
+                "${workspaceFolder}/streamlit_app.py",
                 "--server.port",
                 "8501"
-            ]
+            ],
+            "jinja": true,
+            "justMyCode": true
         }
     ]
 }
