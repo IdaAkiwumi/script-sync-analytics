@@ -9,8 +9,8 @@ import sys
 DATA_DIR = "data"
 DATASETS = [
     "asaniczka/tmdb-movies-dataset-2023-930k-movies",
-    "shivamb/netflix-shows",
-    "asaniczka/trending-youtube-videos-113-countries"
+    "shivamb/netflix-shows"
+   # "asaniczka/trending-youtube-videos-113-countries"
 ]
 
 TARGET_MOVIES = os.path.join(DATA_DIR, "movie_database_movies_2026.csv")
@@ -83,84 +83,123 @@ def process_and_merge():
         'Action & Adventure': 'Action',
         'TV Action & Adventure': 'Action',
         'Anime Features': 'Animation',
-        'Anime Series': 'Animation'
+        'Anime Series': 'Animation',
+        'Entertainment': 'Streaming/YouTube',
+        'People & Blogs': 'Streaming/YouTube',
+        'Gaming': 'Streaming/YouTube',
+        'Music': 'Streaming/YouTube',
+        'Film & Animation': 'Streaming/YouTube'
     }
 
     ADULT_KEYWORDS = ['porn', 'erotica', 'hentai', 'adult film', 'hardcore']
 
     def clean_genre_logic(g):
         if not g or pd.isna(g): return "Other"
-        # Take the first genre in a list
         first_g = str(g).split(',')[0].strip().split('&')[0].strip()
-        # Apply the mapping
         return GENRE_MAP.get(first_g, first_g)
 
     def filter_adult(row):
-        title = str(row['Project']).lower()
+        title = str(row.get('Project', '')).lower()
         if any(word in title for word in ADULT_KEYWORDS):
             return "Adult"
-        return row['Genre']
+        return row.get('Genre', 'Other')
 
-    # --- 2. TMDB ---
-    tmdb_files = glob.glob(os.path.join(DATA_DIR, "*TMDB*.csv"))
-    if tmdb_files:
-        df = pd.read_csv(tmdb_files[0], low_memory=False)
-        df = df.rename(columns={
-            'title': 'Project',
-            'vote_average': 'Sentiment_Score',
-            'popularity': 'Popularity_Score',
-            'genres': 'Genre'
-        })
-        # Basic TMDB cleaning
-        if 'vote_count' in df.columns:
-            df = df[df['vote_count'] > 50] # Lowered slightly to ensure 10k volume
-        all_frames.append(df)
+    # --- NEW: HARMONIZED INGESTION ---
+    # We use glob to find ALL csv files downloaded from the slugs above
+    all_csvs = glob.glob(os.path.join(DATA_DIR, "*.csv"))
+    
+    for csv_file in all_csvs:
+        filename = os.path.basename(csv_file)
+        if filename == os.path.basename(TARGET_MOVIES): continue # Don't ingest the output
+        
+        try:
+            temp_df = pd.read_csv(csv_file, low_memory=False)
+            
+            # 1. Harmonize Project Name
+            name_cols = ['title', 'Series_Title', 'movie_title', 'original_title', 'track_name']
+            for c in name_cols:
+                if c in temp_df.columns:
+                    temp_df = temp_df.rename(columns={c: 'Project'})
+                    break
+            
+            # 2. Harmonize Genres
+            genre_cols = ['genres', 'listed_in', 'genre', 'Genre']
+            for c in genre_cols:
+                if c in temp_df.columns:
+                    temp_df = temp_df.rename(columns={c: 'Genre'})
+                    break
 
-    # --- 3. NETFLIX ---
-    nf_files = glob.glob(os.path.join(DATA_DIR, "netflix_titles.csv"))
-    if nf_files:
-        df_nf = pd.read_csv(nf_files[0])
-        df_nf = df_nf.rename(columns={'title': 'Project', 'listed_in': 'Genre'})
-        df_nf['Sentiment_Score'] = 0.65 
-        df_nf['Popularity_Score'] = 65
-        df_nf['id'] = range(900000, 900000 + len(df_nf))
-        all_frames.append(df_nf)
+            # 3. Harmonize Lead Talent (Starring)
+            talent_cols = ['actors', 'stars', 'cast', 'Star1', 'Lead_Talent']
+            for c in talent_cols:
+                if c in temp_df.columns:
+                    temp_df = temp_df.rename(columns={c: 'Lead_Talent'})
+                    break
 
-    # --- 4. YOUTUBE ---
-    yt_files = glob.glob(os.path.join(DATA_DIR, "*videos*.csv"))
-    if yt_files:
-        df_yt = pd.read_csv(yt_files[0], low_memory=False).head(10000)
-        df_yt = df_yt.rename(columns={'title': 'Project'})
-        df_yt['Genre'] = 'YouTube/Streaming'
-        df_yt['Sentiment_Score'] = 0.70
-        if 'view_count' in df_yt.columns:
-            max_views = df_yt['view_count'].max()
-            df_yt['Popularity_Score'] = (df_yt['view_count'] / max_views) * 100 if max_views > 0 else 0
-        df_yt['id'] = range(1000000, 1000000 + len(df_yt))
-        all_frames.append(df_yt)
+            # 4. Harmonize Scores
+            score_cols = ['vote_average', 'IMDB_Rating', 'rating', 'score']
+            for c in score_cols:
+                if c in temp_df.columns:
+                    temp_df = temp_df.rename(columns={c: 'Sentiment_Score'})
+                    break
+
+            pop_cols = ['popularity', 'view_count', 'No_of_Votes']
+            for c in pop_cols:
+                if c in temp_df.columns:
+                    temp_df = temp_df.rename(columns={c: 'Popularity_Score'})
+                    break
+
+            # Ensure minimal requirements exist
+            if 'Project' in temp_df.columns:
+                # NEW: Source-specific Genre Tagging
+                if "video" in filename.lower() or "youtube" in filename.lower():
+                    temp_df['Genre'] = 'Streaming/YouTube'
+                
+                # Add placeholders if missing
+                if 'Sentiment_Score' not in temp_df.columns: temp_df['Sentiment_Score'] = 0.5
+                if 'Popularity_Score' not in temp_df.columns: temp_df['Popularity_Score'] = 50
+                if 'Genre' not in temp_df.columns: temp_df['Genre'] = 'Unknown'
+                if 'Lead_Talent' not in temp_df.columns: temp_df['Lead_Talent'] = 'Ensemble'
+                if 'id' not in temp_df.columns: temp_df['id'] = range(len(temp_df))
+
+                all_frames.append(temp_df)
+                print(f"📊 Harmonized {filename} - prep_data.py:166")
+        except Exception as e:
+            print(f"⚠️ Could not process {filename}: {e} - prep_data.py:168")
 
     if not all_frames:
-        print("❌ No data found. - prep_data.py:143")
+        print("❌ No data found to merge. - prep_data.py:171")
         return
 
     # --- 5. FINAL MERGE & REFINEMENT ---
     final_df = pd.concat(all_frames, ignore_index=True, sort=False)
     
-    # Apply Genre Cleaning
-    final_df['Genre'] = final_df['Genre'].apply(clean_genre_logic)
+    # FIX: Force scores to be numeric and handle the 'float vs str' error
+    final_df['Sentiment_Score'] = pd.to_numeric(final_df['Sentiment_Score'], errors='coerce').fillna(0.5)
+    final_df['Popularity_Score'] = pd.to_numeric(final_df['Popularity_Score'], errors='coerce').fillna(50)
+
+    # Clean up any messy strings that could break the UI
+    final_df['Lead_Talent'] = final_df['Lead_Talent'].astype(str).apply(lambda x: x.split(',')[0].replace('[', '').replace("'", "").strip())
     
-    # Apply Adult Content Filter
+    # Cleaning
+    final_df['Genre'] = final_df['Genre'].apply(clean_genre_logic)
     final_df['Genre'] = final_df.apply(filter_adult, axis=1)
     
-    # Drop duplicates based on Project Name (keeps the highest popularity version)
+    # Now this math will work safely because the column is guaranteed to be numeric
+    if final_df['Sentiment_Score'].max() > 1.1:
+        final_df['Sentiment_Score'] = final_df['Sentiment_Score'] / 10.0
+
+    # Sort and Drop Duplicates
     final_df = final_df.sort_values('Popularity_Score', ascending=False)
     final_df = final_df.drop_duplicates(subset=['Project'], keep='first')
 
-    # Ensure we keep all columns you need for the UI
-    final_df = final_df.head(10000) # Only keep the row limit, not the column limit
+    # Keep all columns but limit to top 10k for performance
+    final_df = final_df.head(10000)
+
+
 
     final_df.to_csv(TARGET_MOVIES, index=False)
-    print(f"🚀 MISSION COMPLETE: {len(final_df)} unique projects synced. - prep_data.py:163")
+    print(f"🚀 MISSION COMPLETE: {len(final_df)} unique projects synced. - prep_data.py:202")
 
 if __name__ == "__main__":
     refresh_flag = "--refresh" in sys.argv
