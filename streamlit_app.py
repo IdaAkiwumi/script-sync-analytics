@@ -1,6 +1,6 @@
 """
 PROJECT: Genre Sync Analytics
-VERSION: 1.0.1
+VERSION: 1.0.2
 AUTHOR: Ida Akiwumi
 ROLE: Product Architect | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
@@ -17,7 +17,7 @@ IDEAL FOR:
 """
 
 __author__ = "Ida Akiwumi"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __license__ = "Proprietary"
 __status__ = "Production / Portfolio"
 
@@ -154,6 +154,7 @@ def load_placeholder_data():
         'Sentiment_Score': [0.75, 0.45, -0.20, 0.10, 0.30],
         'Popularity_Score': [94, 89, 40, 55, 60],
         'Genre': ['Thriller', 'Comedy', 'Horror', 'Drama', 'Action'],
+        'Lead_Talent': ['John Doe', 'Jane Smith', 'Ensemble', 'Chris Evans', 'Ensemble']
     }
     return pd.DataFrame(data)
 
@@ -166,12 +167,20 @@ def load_real_data():
         
         if os.path.exists(movies_path):
             m_df = pd.read_csv(movies_path, engine='python', on_bad_lines='skip')
-            m_df = m_df.rename(columns={
+            
+            # FIX: Remove any duplicate columns immediately after loading
+            m_df = m_df.loc[:, ~m_df.columns.duplicated(keep='first')]
+            
+            # Rename columns if they exist with original names (and target doesn't exist)
+            rename_map = {
                 'title': 'Project',
                 'vote_average': 'Sentiment_Score',
                 'popularity': 'Popularity_Score',
                 'genres': 'Genre'
-            })
+            }
+            for old_name, new_name in rename_map.items():
+                if old_name in m_df.columns and new_name not in m_df.columns:
+                    m_df = m_df.rename(columns={old_name: new_name})
 
             def clean_genres(g):
                 try:
@@ -188,16 +197,42 @@ def load_real_data():
             if 'Genre' in m_df.columns:
                 m_df['Genre'] = m_df['Genre'].apply(clean_genres)
 
-            if os.path.exists(cast_path):
+            # Only merge cast data if Lead_Talent doesn't already exist
+            if 'Lead_Talent' not in m_df.columns and os.path.exists(cast_path):
                 c_df = pd.read_csv(cast_path, engine='python', on_bad_lines='skip')
+                # FIX: Remove duplicate columns from cast data too
+                c_df = c_df.loc[:, ~c_df.columns.duplicated(keep='first')]
                 if 'id' in m_df.columns and 'id' in c_df.columns:
-                    m_df = pd.merge(m_df, c_df[['id', 'name']], on='id', how='left').rename(columns={'name': 'Lead_Talent'})
+                    m_df = pd.merge(m_df, c_df[['id', 'name']], on='id', how='left')
+                    if 'name' in m_df.columns:
+                        m_df = m_df.rename(columns={'name': 'Lead_Talent'})
             
-            if 'Sentiment_Score' in m_df.columns and m_df['Sentiment_Score'].max() > 1:
-                m_df['Sentiment_Score'] = (m_df['Sentiment_Score'] - 5) / 5
+            if 'Sentiment_Score' in m_df.columns:
+                if m_df['Sentiment_Score'].max() > 1:
+                    m_df['Sentiment_Score'] = (m_df['Sentiment_Score'] - 5) / 5
+            
+            # FIX: Final safety checks - ensure no duplicate columns
+            m_df = m_df.loc[:, ~m_df.columns.duplicated(keep='first')]
+            
+            # FIX: Ensure Lead_Talent exists
+            if 'Lead_Talent' not in m_df.columns:
+                m_df['Lead_Talent'] = 'Ensemble'
+            
+            # Ensure required columns exist with defaults
+            required_cols = {
+                'Project': 'Unknown',
+                'Genre': 'Other',
+                'Sentiment_Score': 0.5,
+                'Popularity_Score': 50,
+                'Lead_Talent': 'Ensemble'
+            }
+            for col, default in required_cols.items():
+                if col not in m_df.columns:
+                    m_df[col] = default
                 
             return m_df
-    except Exception:
+    except Exception as e:
+        print(f"❌ Error loading data: {e}")
         return None
 
 
@@ -207,6 +242,9 @@ def load_real_data():
 with st.spinner('🎬 Loading Market Intelligence...'):
     real_df = load_real_data()
     df_full = real_df if real_df is not None else load_placeholder_data()
+
+# FIX: Ensure df_full has no duplicate columns before any operations
+df_full = df_full.loc[:, ~df_full.columns.duplicated(keep='first')]
 
 if "active_scenario_name" not in st.session_state:
     st.session_state.active_scenario_name = "Default (Industry Standard)"
@@ -365,7 +403,10 @@ with st.sidebar:
     """)
 
 # --- 5. DATA FILTERING LOGIC ---
-df = df_full[df_full['Genre'].isin(genre_filter)]
+df = df_full[df_full['Genre'].isin(genre_filter)].copy()
+
+# FIX: Ensure filtered df also has no duplicate columns
+df = df.loc[:, ~df.columns.duplicated(keep='first')]
 
 # --- 6. MAIN INTERFACE ---
 st.markdown(f'''
@@ -511,11 +552,23 @@ st.markdown("""
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
+    # FIX: Create a clean copy and ensure no duplicate columns for Plotly
     display_df = df.copy()
+    display_df = display_df.loc[:, ~display_df.columns.duplicated(keep='first')]
+    
     active_genres_str = ", ".join(genre_filter) if genre_filter else "All Genres"
 
     y_max = display_df['Popularity_Score'].max()
     y_upper_limit = y_max * 1.15 if y_max > 0 else 100
+
+    # FIX: Build hover_data safely - only include Lead_Talent if it exists
+    hover_data_config = {
+        "Sentiment_Score": ":.2f",
+        "Popularity_Score": ":.1f",
+        "Genre": True,
+    }
+    if "Lead_Talent" in display_df.columns:
+        hover_data_config["Lead_Talent"] = True
 
     fig_scatter = px.scatter(
         display_df, 
@@ -524,37 +577,32 @@ with tab1:
         size="Popularity_Score", 
         color="Genre", 
         hover_name="Project",
-        hover_data={
-            "Sentiment_Score": ":.2f",
-            "Popularity_Score": ":.1f",
-            "Genre": True,
-            "Lead_Talent": True if "Lead_Talent" in display_df.columns else False
-        },
+        hover_data=hover_data_config,
         range_x=[-0.05, 0.9], 
         range_y=[0, y_upper_limit],
         template="plotly_dark",
         size_max=35, 
-        height=500  # Increased height to accommodate legend spacing
+        height=500
     )
     
     fig_scatter.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
     
-    # FIXED: Horizontal legend with more breathing room
+    # Horizontal legend with breathing room
     fig_scatter.update_layout(
         showlegend=True,
         legend=dict(
             orientation="h",
             yanchor="top",
-            y=-0.15,  # Moved further down from the chart
+            y=-0.15,
             xanchor="center",
             x=0.5,
             font=dict(size=10),
-            bgcolor="rgba(0,0,0,0)",  # Transparent background
+            bgcolor="rgba(0,0,0,0)",
             borderwidth=0
         ),
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=10, b=80),  # Increased bottom margin for legend
+        margin=dict(l=0, r=0, t=10, b=80),
         xaxis_title="Sentiment ROI",
         yaxis_title="Market Appetite Index"
     )
@@ -578,14 +626,13 @@ with tab2:
         height=450,
         title="Active Market Saturation (Selected Genres)"
     )
-    # FIXED: Increased top margin to show full title
     fig_bar.update_layout(
-        margin=dict(l=0, r=0, t=50, b=0),  # Increased from 35 to 50
+        margin=dict(l=0, r=0, t=50, b=0),
         showlegend=False, 
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
         title=dict(
-            y=0.95,  # Position title higher within the chart area
+            y=0.95,
             x=0.5,
             xanchor='center',
             yanchor='top',
@@ -595,6 +642,8 @@ with tab2:
     st.plotly_chart(fig_bar, use_container_width=True, key="genre_distribution_bar")
 
 with st.expander("📂 View Full Intelligence Ledger"):
-    st.dataframe(df, use_container_width=True)
+    # FIX: Ensure no duplicate columns in the displayed dataframe
+    ledger_df = df.loc[:, ~df.columns.duplicated(keep='first')]
+    st.dataframe(ledger_df, use_container_width=True)
 
 st.caption(f"Genre Sync Analytics v{__version__} | Strategic Intelligence by Ida Akiwumi.")
