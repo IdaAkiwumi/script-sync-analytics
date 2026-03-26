@@ -1,6 +1,6 @@
 """
 PROJECT: Genre Sync Analytics
-VERSION: 1.1.0
+VERSION: 1.1.1
 AUTHOR: Ida Akiwumi
 ROLE: Product Architect | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
@@ -17,7 +17,7 @@ IDEAL FOR:
 """
 
 __author__ = "Ida Akiwumi"
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __license__ = "Proprietary"
 __status__ = "Production / Portfolio"
 
@@ -26,7 +26,6 @@ import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
 import os
-import ast
 import numpy as np
 import json
 
@@ -50,6 +49,8 @@ def init_state():
         st.session_state.just_selected = False
     if "confirm_clear" not in st.session_state:
         st.session_state.confirm_clear = False
+    if "ignore_next_plot_selection" not in st.session_state:
+        st.session_state.ignore_next_plot_selection = False
 
 init_state()
 
@@ -565,6 +566,7 @@ if not df.empty:
 
     opportunity_pct, opp_label, opp_color = calculate_genre_opportunity(df_full, genre_filter)
 else:
+    raw_sentiment = 0.0
     sentiment_pct, avg_market, opportunity_pct = 0, 0, 0
     opp_label, opp_color = "N/A", "#888"
 
@@ -707,7 +709,7 @@ with tab1:
         ),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=25, b=80),
+        margin=dict(l=0, r=0, t=10, b=80),
         xaxis_title="Sentiment ROI (-1 to 1)",
         yaxis_title="Market Appetite Index"
     )
