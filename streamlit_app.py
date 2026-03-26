@@ -626,7 +626,7 @@ with tab1:
         color="Genre", 
         hover_name="Project",
         hover_data=hover_data_config,
-        range_x=[-0.05, 0.9], 
+        range_x=[-0.01, 1.08], 
         range_y=[0, y_upper_limit],
         template="plotly_dark",
         size_max=35, 
