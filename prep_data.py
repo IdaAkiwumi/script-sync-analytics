@@ -686,6 +686,11 @@ def safe_read_csv(filepath, max_rows=2_000_000):
     Returns DataFrame or None if all methods fail.
     """
     filename = os.path.basename(filepath)
+    
+    try:
+        return pd.read_csv(filepath, low_memory=False, encoding='latin1', on_bad_lines='skip', nrows=max_rows)
+    except:
+        pass
 
     try:
         return pd.read_csv(filepath, low_memory=False, nrows=max_rows)
@@ -980,9 +985,9 @@ def process_and_merge():
 
 def main():
     """Main entry point."""
-    print("\n - prep_data.py:983" + "=" * 50)
-    print("🎬 GENRE SYNC ANALYTICS DATA PIPELINE v2.0 - prep_data.py:984")
-    print("= - prep_data.py:985" * 50 + "\n")
+    print("\n - prep_data.py:988" + "=" * 50)
+    print("🎬 GENRE SYNC ANALYTICS DATA PIPELINE v2.0 - prep_data.py:989")
+    print("= - prep_data.py:990" * 50 + "\n")
 
     refresh_flag = "--refresh" in sys.argv
 
@@ -997,9 +1002,9 @@ def main():
     process_and_merge()
     cleanup_raw_data()
 
-    print("\n - prep_data.py:1000" + "=" * 50)
-    print("✅ All done! Your data is ready for Genre Sync Analytics. - prep_data.py:1001")
-    print("= - prep_data.py:1002" * 50 + "\n")
+    print("\n - prep_data.py:1005" + "=" * 50)
+    print("✅ All done! Your data is ready for Genre Sync Analytics. - prep_data.py:1006")
+    print("= - prep_data.py:1007" * 50 + "\n")
 
 
 if __name__ == "__main__":
