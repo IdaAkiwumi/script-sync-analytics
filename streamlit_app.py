@@ -552,7 +552,7 @@ st.markdown("""
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
-    # FIX: Create a clean copy and ensure no duplicate columns for Plotly
+    # Create a clean copy and ensure no duplicate columns for Plotly
     display_df = df.copy()
     display_df = display_df.loc[:, ~display_df.columns.duplicated(keep='first')]
     
@@ -561,7 +561,7 @@ with tab1:
     y_max = display_df['Popularity_Score'].max()
     y_upper_limit = y_max * 1.15 if y_max > 0 else 100
 
-    # FIX: Build hover_data safely - only include Lead_Talent if it exists
+    # Build hover_data safely - only include Lead_Talent if it exists
     hover_data_config = {
         "Sentiment_Score": ":.2f",
         "Popularity_Score": ":.1f",
@@ -569,6 +569,60 @@ with tab1:
     }
     if "Lead_Talent" in display_df.columns:
         hover_data_config["Lead_Talent"] = True
+
+    # FIX: Custom color palette with 30+ unique colors for genres
+    GENRE_COLORS = {
+        'Comedy': '#FFD700',        # Gold
+        'Drama': '#4169E1',         # Royal Blue
+        'Action': '#FF4500',        # Orange Red
+        'Horror': '#8B0000',        # Dark Red
+        'Thriller': '#483D8B',      # Dark Slate Blue
+        'Sci-Fi': '#00CED1',        # Dark Turquoise
+        'Fantasy': '#9932CC',       # Dark Orchid
+        'Romance': '#FF69B4',       # Hot Pink
+        'Animation': '#32CD32',     # Lime Green
+        'Documentary': '#808080',   # Gray
+        'Crime': '#2F4F4F',         # Dark Slate Gray
+        'Family': '#FFA07A',        # Light Salmon
+        'Musical': '#FF1493',       # Deep Pink
+        'War': '#556B2F',           # Dark Olive Green
+        'Western': '#D2691E',       # Chocolate
+        'Historical': '#8B4513',    # Saddle Brown
+        'Spy': '#191970',           # Midnight Blue
+        'Sports': '#228B22',        # Forest Green
+        'International': '#DB7093', # Pale Violet Red
+        'Indie': '#20B2AA',         # Light Sea Green
+        'Classic': '#DAA520',       # Goldenrod
+        'Cult': '#800080',          # Purple
+        'Holiday': '#DC143C',       # Crimson
+        'Faith': '#F0E68C',         # Khaki
+        'LGBTQ+': '#FF00FF',        # Magenta
+        'Reality': '#00FA9A',       # Medium Spring Green
+        'TV Series': '#6495ED',     # Cornflower Blue
+        'Short': '#BC8F8F',         # Rosy Brown
+        'Adult': '#A52A2A',         # Brown
+        'Unknown': '#696969',       # Dim Gray
+        'Other': '#778899',         # Light Slate Gray
+        'Misc': '#708090',          # Slate Gray
+        'Streaming/YouTube': '#FF6347',  # Tomato
+    }
+    
+    # Get unique genres in the current data
+    unique_genres = display_df['Genre'].unique().tolist()
+    
+    # Build color sequence for current genres
+    color_sequence = []
+    for genre in unique_genres:
+        if genre in GENRE_COLORS:
+            color_sequence.append(GENRE_COLORS[genre])
+        else:
+            # Generate a color for any new/unmapped genre
+            import hashlib
+            hash_val = int(hashlib.md5(genre.encode()).hexdigest()[:6], 16)
+            r = (hash_val >> 16) & 255
+            g = (hash_val >> 8) & 255
+            b = hash_val & 255
+            color_sequence.append(f'rgb({r},{g},{b})')
 
     fig_scatter = px.scatter(
         display_df, 
@@ -582,7 +636,8 @@ with tab1:
         range_y=[0, y_upper_limit],
         template="plotly_dark",
         size_max=35, 
-        height=500
+        height=500,
+        color_discrete_map=GENRE_COLORS  # Use our custom color map
     )
     
     fig_scatter.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
@@ -624,7 +679,8 @@ with tab2:
         genre_counts, x='Genre', y='Count', 
         color='Genre', template="plotly_dark",
         height=450,
-        title="Active Market Saturation (Selected Genres)"
+        title="Active Market Saturation (Selected Genres)",
+        color_discrete_map=GENRE_COLORS  # Use same colors for consistency
     )
     fig_bar.update_layout(
         margin=dict(l=0, r=0, t=50, b=0),
