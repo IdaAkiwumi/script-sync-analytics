@@ -1,15 +1,15 @@
 """
 PREP_DATA.PY - Genre Sync Analytics Data Pipeline
-VERSION: 1.0.0
+VERSION: 2.1.1
 AUTHOR: Ida Akiwumi
 LAST UPDATED: March 2026
 
 DESCRIPTION:
-Fetches, cleans, normalizes, and consolidates movie metadata from multiple
+Fetches, cleans, normalizes, and consolidates movie/content metadata from multiple
 Kaggle datasets into a unified intelligence database for Genre Sync Analytics.
 
 OUTPUT:
-- movie_database_movies_2026.csv (Top 10,000 movies)
+- movie_database_movies_2026.csv (Top 10,000 projects)
 - movie_database_cast_2026.csv
 - movie_database_crew_2026.csv
 - movie_database_genres_2026.csv
@@ -159,7 +159,49 @@ def cleanup_raw_data():
     log(f"Cleanup complete: {deleted} files deleted, {preserved} preserved", "SUCCESS")
 
 
+# --- REFINED PRIMARY CONTENT TAXONOMY (24 BUCKETS) ---
+FINAL_BUCKETS = [
+    "Action",
+    "Adventure",
+    "Animation",
+    "Biography",
+    "Comedy",
+    "Crime",
+    "Documentary",
+    "Drama",
+    "Family",
+    "Fantasy",
+    "History",
+    "Horror",
+    "Musical",
+    "Mystery",
+    "Reality",
+    "Romance",
+    "Sci-Fi",
+    "Short",
+    "Sports",
+    "Supernatural",
+    "Thriller",
+    "TV Series",
+    "War",
+    "Adult",
+]
+
 GENRE_MAP = {
+    # Action / Adventure
+    'Action': 'Action', 'Action & Adventure': 'Action', 'TV Action & Adventure': 'Action',
+    'Action-Adventure': 'Action', 'Action Movies': 'Action', 'Action Film': 'Action',
+    'Martial Arts': 'Action', 'Martial Arts Film': 'Action', 'Kung Fu': 'Action',
+    'Superhero': 'Action', 'Superhero Movies': 'Action', 'Comic Book': 'Action',
+    'Disaster': 'Action', 'Disaster Film': 'Action', 'Spy': 'Action',
+    'Spy Movies': 'Action', 'Spy Film': 'Action', 'Espionage': 'Action',
+    'Secret Agent': 'Action', 'Samurai': 'Action', 'Stunt': 'Action',
+
+    'Adventure': 'Adventure', 'Adventure Movies': 'Adventure', 'Adventures': 'Adventure',
+    'Quest': 'Adventure', 'Expedition': 'Adventure', 'Journey': 'Adventure',
+    'Survival': 'Adventure', 'Swashbuckler': 'Adventure',
+
+    # Comedy
     'Comedy': 'Comedy', 'Comedies': 'Comedy', 'Comedy Movies': 'Comedy',
     'Stand-Up Comedy': 'Comedy', 'Stand-Up Comedy & Talk Shows': 'Comedy',
     'Stand Up': 'Comedy', 'Standup': 'Comedy', 'Talk Show': 'Comedy',
@@ -170,12 +212,11 @@ GENRE_MAP = {
     'Dramedy': 'Comedy', 'Slapstick': 'Comedy', 'Screwball Comedy': 'Comedy',
     'Mockumentary': 'Comedy',
 
+    # Drama
     'Drama': 'Drama', 'Dramas': 'Drama', 'Drama Movies': 'Drama',
     'TV Dramas': 'Drama', 'Legal Drama': 'Drama', 'Medical Drama': 'Drama',
     'Political Drama': 'Drama', 'Period Drama': 'Drama', 'Costume Drama': 'Drama',
-    'Historical Drama': 'Drama', 'Historical': 'Drama', 'History': 'Drama',
-    'Biographical Drama': 'Drama', 'Biography': 'Drama', 'Biographical': 'Drama',
-    'Biopic': 'Drama', 'Bio-Pic': 'Drama', 'Social Issue Drama': 'Drama',
+    'Historical Drama': 'Drama', 'Social Issue Drama': 'Drama',
     'Teen Drama': 'Drama', 'Coming of Age': 'Drama', 'Soap Opera': 'Drama',
     'Melodrama': 'Drama', 'Family Drama': 'Drama', 'Psychological Drama': 'Drama',
     'Courtroom': 'Drama', 'Legal': 'Drama', 'Medical': 'Drama',
@@ -186,24 +227,24 @@ GENRE_MAP = {
     'LGBTQ+': 'Drama', 'LGBTQ': 'Drama', 'LGBT': 'Drama', 'Queer Cinema': 'Drama',
     'Gay': 'Drama', 'Lesbian': 'Drama',
 
-    'Action': 'Action', 'Action & Adventure': 'Action', 'TV Action & Adventure': 'Action',
-    'Action-Adventure': 'Action', 'Action Movies': 'Action', 'Action Film': 'Action',
-    'Adventure': 'Action', 'Adventure Movies': 'Action', 'Adventures': 'Action',
-    'Martial Arts': 'Action', 'Martial Arts Film': 'Action', 'Kung Fu': 'Action',
-    'Superhero': 'Action', 'Superhero Movies': 'Action', 'Comic Book': 'Action',
-    'Disaster': 'Action', 'Disaster Film': 'Action', 'Spy': 'Action',
-    'Spy Movies': 'Action', 'Spy Film': 'Action', 'Espionage': 'Action',
-    'Secret Agent': 'Action', 'Swashbuckler': 'Action', 'Samurai': 'Action',
-    'Stunt': 'Action',
+    # Biography / History
+    'Biography': 'Biography', 'Biographical': 'Biography', 'Biographical Drama': 'Biography',
+    'Biopic': 'Biography', 'Bio-Pic': 'Biography',
 
+    'Historical': 'History', 'History': 'History', 'Historical Documentary': 'History',
+    'Historical Films': 'History',
+
+    # War
     'War': 'War', 'War Movies': 'War', 'War Film': 'War', 'Military': 'War',
     'Anti-War': 'War', 'Combat': 'War', 'World War': 'War', 'Vietnam': 'War',
     'WWII': 'War', 'WWI': 'War',
 
+    # Western
     'Western': 'Western', 'Westerns': 'Western', 'Western Movies': 'Western',
     'Spaghetti Western': 'Western', 'Neo-Western': 'Western', 'Cowboy': 'Western',
     'Frontier': 'Western',
 
+    # Crime / Mystery / Thriller
     'Crime': 'Crime', 'Crime Movies': 'Crime', 'Crime Films': 'Crime',
     'TV Crime': 'Crime', 'Gangster': 'Crime', 'Gangster Film': 'Crime',
     'Mob': 'Crime', 'Mafia': 'Crime', 'Prison': 'Crime', 'Prison Film': 'Crime',
@@ -223,6 +264,7 @@ GENRE_MAP = {
     'Suspenseful': 'Thriller', 'Neo-Noir': 'Thriller', 'Film Noir': 'Thriller',
     'Noir': 'Thriller',
 
+    # Horror / Supernatural
     'Horror': 'Horror', 'Horror Movies': 'Horror', 'Horrors': 'Horror',
     'TV Horror': 'Horror', 'Slasher': 'Horror', 'Slasher Film': 'Horror',
     'Psychological Horror': 'Horror', 'Body Horror': 'Horror', 'Found Footage': 'Horror',
@@ -230,14 +272,16 @@ GENRE_MAP = {
     'Monster Movies': 'Horror', 'Monster': 'Horror', 'Creature Feature': 'Horror',
     'Gothic Horror': 'Horror', 'Gothic': 'Horror', 'Splatter': 'Horror',
     'Survival Horror': 'Horror', 'Vampire': 'Horror', 'Werewolf': 'Horror',
-    'Demonic': 'Horror', 'Occult': 'Horror', 'Halloween': 'Horror',
+    'Halloween': 'Horror',
 
     'Supernatural': 'Supernatural', 'Supernatural Horror': 'Supernatural',
     'Paranormal': 'Supernatural', 'Ghost': 'Supernatural', 'Ghosts': 'Supernatural',
     'Haunted': 'Supernatural', 'Haunting': 'Supernatural', 'Poltergeist': 'Supernatural',
     'Possession': 'Supernatural', 'Exorcism': 'Supernatural', 'Afterlife': 'Supernatural',
-    'Angels': 'Supernatural', 'Demons': 'Supernatural',
+    'Angels': 'Supernatural', 'Demons': 'Supernatural', 'Occult': 'Supernatural',
+    'Demonic': 'Supernatural',
 
+    # Sci-Fi / Fantasy
     'Science Fiction': 'Sci-Fi', 'Sci-Fi': 'Sci-Fi', 'SciFi': 'Sci-Fi', 'SF': 'Sci-Fi',
     'Sci-Fi & Fantasy': 'Sci-Fi', 'TV Sci-Fi & Fantasy': 'Sci-Fi',
     'Science Fiction Movies': 'Sci-Fi', 'Sci-Fi Movies': 'Sci-Fi',
@@ -255,11 +299,13 @@ GENRE_MAP = {
     'Magic': 'Fantasy', 'Magical Realism': 'Fantasy', 'Wizards': 'Fantasy',
     'Dragons': 'Fantasy', 'Medieval': 'Fantasy',
 
+    # Romance
     'Romance': 'Romance', 'Romantic Movies': 'Romance', 'Romantic TV Shows': 'Romance',
     'Romance Movies': 'Romance', 'Romance Film': 'Romance', 'Romantic Dramas': 'Romance',
     'Love Story': 'Romance', 'Chick Flick': 'Romance', 'Love': 'Romance',
     'Wedding': 'Romance',
 
+    # Animation
     'Animation': 'Animation', 'Anime Features': 'Animation', 'Anime Series': 'Animation',
     'Anime': 'Animation', 'Animated': 'Animation', 'Animated Movies': 'Animation',
     'Cartoon': 'Animation', 'Cartoons': 'Animation', 'CGI': 'Animation',
@@ -268,15 +314,16 @@ GENRE_MAP = {
     'Dreamworks': 'Animation', 'Studio Ghibli': 'Animation', 'Shonen': 'Animation',
     'Shojo': 'Animation', 'Isekai': 'Animation', 'Mecha': 'Animation',
 
+    # Documentary
     'Documentary': 'Documentary', 'Documentaries': 'Documentary',
     'Documentary Movies': 'Documentary', 'Docuseries': 'Documentary',
     'Docudrama': 'Documentary', 'Nature Documentary': 'Documentary', 'Nature': 'Documentary',
-    'Wildlife': 'Documentary', 'Historical Documentary': 'Documentary',
-    'Music Documentary': 'Documentary', 'Sports Documentary': 'Documentary',
-    'Political Documentary': 'Documentary', 'Science': 'Documentary',
-    'Educational': 'Documentary', 'Instructional': 'Documentary', 'News': 'Documentary',
-    'News & Politics': 'Documentary',
+    'Wildlife': 'Documentary', 'Music Documentary': 'Documentary',
+    'Sports Documentary': 'Documentary', 'Political Documentary': 'Documentary',
+    'Science': 'Documentary', 'Educational': 'Documentary', 'Instructional': 'Documentary',
+    'News': 'Documentary', 'News & Politics': 'Documentary',
 
+    # Family
     'Family': 'Family', 'Family Movies': 'Family', 'Family Films': 'Family',
     'Kids': 'Family', 'Kids Movies': 'Family', "Children's": 'Family',
     "Children's Movies": 'Family', 'Children': 'Family', 'Teen': 'Family',
@@ -284,12 +331,15 @@ GENRE_MAP = {
     'Preschool': 'Family', 'Kids TV': 'Family', "Children's TV": 'Family',
     'Holiday': 'Family', 'Christmas': 'Family', 'Christmas Movies': 'Family',
 
+    # TV Series
     'TV Shows': 'TV Series', 'TV Series': 'TV Series', 'Television': 'TV Series',
     'TV': 'TV Series', 'British TV Shows': 'TV Series', 'Korean TV Shows': 'TV Series',
     'Spanish-Language TV Shows': 'TV Series', 'International TV Shows': 'TV Series',
     'Miniseries': 'TV Series', 'Mini-Series': 'TV Series', 'Limited Series': 'TV Series',
     'Anthology': 'TV Series', 'Web Series': 'TV Series', 'Streaming': 'TV Series',
+    'Serial': 'TV Series',
 
+    # Reality
     'Reality TV': 'Reality', 'Reality': 'Reality', 'Reality Shows': 'Reality',
     'Competition Reality': 'Reality', 'Competition': 'Reality', 'Dating Show': 'Reality',
     'Dating': 'Reality', 'Game Show': 'Reality', 'Game Shows': 'Reality',
@@ -300,66 +350,48 @@ GENRE_MAP = {
     'People & Blogs': 'Reality', 'Vlog': 'Reality', 'Podcast': 'Reality',
     'ASMR': 'Reality', 'Commentary': 'Reality', 'Reaction': 'Reality',
 
-    'International': 'International', 'International Movies': 'International',
-    'Foreign': 'International', 'Foreign Film': 'International',
-    'Foreign Language': 'International', 'World Cinema': 'International',
-    'Bollywood': 'International', 'Korean Movies': 'International', 'Korean': 'International',
-    'K-Drama': 'International', 'Chinese Movies': 'International', 'Chinese': 'International',
-    'Japanese Movies': 'International', 'Japanese': 'International', 'J-Drama': 'International',
-    'French Movies': 'International', 'French': 'International', 'Spanish Movies': 'International',
-    'Spanish': 'International', 'Latin American': 'International', 'Telenovela': 'International',
-    'European': 'International', 'European Movies': 'International',
-    'African Movies': 'International', 'African': 'International', 'Middle Eastern': 'International',
-    'Indian Movies': 'International', 'Indian': 'International', 'British': 'International',
-    'British Movies': 'International', 'German': 'International', 'Italian': 'International',
-    'Scandinavian': 'International', 'Australian': 'International', 'Thai': 'International',
-    'Turkish': 'International',
-
+    # Musical
     'Music': 'Musical', 'Musical': 'Musical', 'Musicals': 'Musical',
     'Music Movies': 'Musical', 'Concert Film': 'Musical', 'Concert': 'Musical',
     'Music Video': 'Musical', 'Opera': 'Musical', 'Dance': 'Musical',
     'Dance Film': 'Musical', 'Jukebox Musical': 'Musical',
 
-    'Independent': 'Indie', 'Indie': 'Indie', 'Independent Movies': 'Indie',
-    'Indie Movies': 'Indie', 'Indie Film': 'Indie', 'Arthouse': 'Indie',
-    'Art House': 'Indie', 'Art Film': 'Indie', 'Experimental': 'Indie',
-    'Avant-Garde': 'Indie', 'Low Budget': 'Indie', 'Microbudget': 'Indie',
-
-    'Classic': 'Classic', 'Classic Movies': 'Classic', 'Classics': 'Classic',
-    'Golden Age': 'Classic', 'Vintage': 'Classic', 'Old Hollywood': 'Classic',
-    'Cult Movies': 'Classic', 'Cult Classics': 'Classic', 'Cult Classic': 'Classic',
-    'Cult': 'Classic', 'B-Movie': 'Classic', 'B-Movies': 'Classic',
-    'B Movie': 'Classic', 'Exploitation': 'Classic', 'Grindhouse': 'Classic',
-    'Midnight Movie': 'Classic', 'Camp': 'Classic', 'Campy': 'Classic',
-    'Retro': 'Classic',
-
+    # Sports
     'Sports': 'Sports', 'Sports Movies': 'Sports', 'Sports Film': 'Sports',
     'Sports Drama': 'Sports', 'Boxing': 'Sports', 'Football': 'Sports',
     'Baseball': 'Sports', 'Basketball': 'Sports', 'Racing': 'Sports',
     'Soccer': 'Sports', 'Wrestling': 'Sports', 'MMA': 'Sports',
     'Esports': 'Sports', 'Olympics': 'Sports', 'Gaming': 'Sports',
 
+    # Short
     'Short Film': 'Short', 'Short Films': 'Short', 'Shorts': 'Short', 'Short': 'Short',
+    'YouTube': 'Short', 'Web Video': 'Short', 'Online Video': 'Short',
+    'Digital Short': 'Short', 'Mini Episode': 'Short',
 
+    # Adult
     'Adult': 'Adult', 'NC-17': 'Adult', 'X-Rated': 'Adult', 'Erotic': 'Adult',
-    'Erotica': 'Adult', 'Softcore': 'Adult', 'Mature': 'Adult',
-    'Erotic Thriller': 'Adult',
+    'Erotica': 'Adult', 'Softcore': 'Adult', 'Hardcore': 'Adult',
+    'Erotic Thriller': 'Adult', 'Porn': 'Adult', 'Pornographic': 'Adult',
+    'Explicit': 'Adult', 'Hentai': 'Adult', 'Sexploitation': 'Adult',
 }
 
 ADULT_KEYWORDS = [
-    'porn', 'porno', 'pornographic',
-    'xxx', 'x-rated', 'xrated',
-    'erotica', 'erotic film',
+    'porn', 'porno', 'pornographic', 'pornhub',
+    'xxx', 'x-rated', 'xrated', 'xxxl',
+    'erotica', 'erotic', 'erotic film', 'explicit sex',
     'hentai', 'ecchi',
-    'adult film', 'adult video', 'adult movie',
+    'adult film', 'adult video', 'adult movie', 'adult entertainment',
     'hardcore', 'softcore',
     'sexploitation', 'nudie',
-    'blue film', 'stag film'
+    'blue film', 'stag film',
+    'camgirl', 'cams', 'onlyfans', 'fetish', 'bdsm',
+    'anal', 'blowjob', 'cumshot', 'milf', 'nsfw'
 ]
 
-PROTECTED_GENRES = [
-    'Animation', 'Family', 'Documentary', 'Sports',
-    'Reality', 'TV Series', 'Musical'
+ADULT_METADATA_KEYWORDS = [
+    'adult', 'porn', 'porno', 'pornographic', 'x-rated', 'xxx',
+    'erotic', 'erotica', 'hardcore', 'softcore', 'sex', 'nsfw',
+    'fetish', 'hentai', 'explicit'
 ]
 
 KNOWN_TITLES_WITH_GENRES = {
@@ -392,11 +424,11 @@ KNOWN_TITLES_WITH_GENRES = {
     'jaws': 'Thriller',
     'jurassic park': 'Sci-Fi',
     'star wars': 'Sci-Fi',
-    'indiana jones': 'Action',
+    'indiana jones': 'Adventure',
     'back to the future': 'Sci-Fi',
     'the lord of the rings': 'Fantasy',
     'harry potter': 'Fantasy',
-    'pirates of the caribbean': 'Action',
+    'pirates of the caribbean': 'Adventure',
     'avatar': 'Sci-Fi',
     'titanic': 'Romance',
     'the avengers': 'Action',
@@ -439,11 +471,11 @@ KNOWN_TITLES_WITH_GENRES = {
     'squid game': 'Thriller',
     'money heist': 'Crime',
     'wednesday': 'Comedy',
-    "schindler's list": 'Drama',
+    "schindler's list": 'History',
     'saving private ryan': 'War',
-    'braveheart': 'Action',
+    'braveheart': 'History',
     'the pianist': 'Drama',
-    'a beautiful mind': 'Drama',
+    'a beautiful mind': 'Biography',
     'the wolf of wall street': 'Comedy',
     'catch me if you can': 'Crime',
     'django unchained': 'Western',
@@ -460,7 +492,7 @@ KNOWN_TITLES_WITH_GENRES = {
     'gravity': 'Sci-Fi',
     'the martian': 'Sci-Fi',
     'dunkirk': 'War',
-    'oppenheimer': 'Drama',
+    'oppenheimer': 'Biography',
     'barbie': 'Comedy',
     'everything everywhere all at once': 'Sci-Fi',
     'the exorcist': 'Horror',
@@ -515,6 +547,8 @@ def normalize_title(title):
         t = 'the ' + t.replace(', the', '')
     if ', a' in t:
         t = 'a ' + t.replace(', a', '')
+    if ', an' in t:
+        t = 'an ' + t.replace(', an', '')
 
     if t.startswith('the '):
         t = t[4:]
@@ -529,6 +563,24 @@ def normalize_title(title):
     return t.strip()
 
 
+def parse_json_like(value):
+    """Parse stringified JSON/list/dict safely."""
+    if pd.isna(value) or value is None:
+        return None
+
+    value = str(value).strip()
+    if not value:
+        return None
+
+    if not (value.startswith('[') or value.startswith('{')):
+        return None
+
+    try:
+        return ast.literal_eval(value)
+    except Exception:
+        return None
+
+
 def parse_json_genre(genre_str):
     """Parse JSON-formatted genre strings from TMDB datasets."""
     if not genre_str or pd.isna(genre_str):
@@ -541,12 +593,15 @@ def parse_json_genre(genre_str):
 
     try:
         items = ast.literal_eval(genre_str)
-        if items and isinstance(items, list) and len(items) > 0:
-            first_item = items[0]
-            if isinstance(first_item, dict) and 'name' in first_item:
-                return first_item['name']
-            elif isinstance(first_item, str):
-                return first_item
+        if items and isinstance(items, list):
+            names = []
+            for item in items:
+                if isinstance(item, dict) and 'name' in item:
+                    names.append(item['name'])
+                elif isinstance(item, str):
+                    names.append(item)
+            if names:
+                return ', '.join(names)
     except Exception:
         pass
 
@@ -570,10 +625,55 @@ def matches_known_title(title_lower, known_title):
     return False
 
 
+def infer_content_type(row):
+    """Infer broad content type for mixed-media catalog."""
+    genre = str(row.get('Genre', '')).strip()
+    raw_type = str(row.get('type', '')).strip().lower()
+    filename_hint = str(row.get('_source_file', '')).lower()
+
+    if genre == 'Adult':
+        return 'Adult'
+    if genre == 'Short':
+        return 'Short'
+    if genre == 'Reality':
+        return 'Reality'
+    if genre == 'TV Series':
+        return 'TV Series'
+    if genre == 'Documentary':
+        return 'Documentary'
+
+    if raw_type in ['tv show', 'tv', 'series', 'show']:
+        return 'TV Series'
+    if raw_type in ['movie', 'film']:
+        return 'Film'
+    if 'youtube' in filename_hint or 'video' in filename_hint:
+        return 'Short'
+
+    return 'Film'
+
+
+def detect_explicit_adult(title='', genre_value='', overview='', keywords=''):
+    """Detect explicit pornographic/adult material from multiple fields."""
+    combined = " ".join([
+        str(title or ''),
+        str(genre_value or ''),
+        str(overview or ''),
+        str(keywords or '')
+    ]).lower()
+
+    hits = sum(1 for word in ADULT_KEYWORDS if word in combined)
+    meta_hits = sum(1 for word in ADULT_METADATA_KEYWORDS if word in combined)
+
+    if hits >= 1 and meta_hits >= 1:
+        return True
+    if hits >= 2:
+        return True
+
+    return False
+
+
 def clean_genre(genre_value, title=''):
-    """
-    Map raw genre to consolidated category.
-    """
+    """Map raw genre to consolidated category."""
     title_str = str(title).strip()
     title_lower = title_str.lower()
 
@@ -585,7 +685,6 @@ def clean_genre(genre_value, title=''):
     if genre_str.lower() in ['', 'nan', 'none', 'null', 'n/a', 'unknown']:
         genre_str = ""
 
-    # Known-title override first
     for known_title, known_genre in KNOWN_TITLES_WITH_GENRES.items():
         if matches_known_title(title_lower, known_title):
             return known_genre
@@ -619,26 +718,31 @@ def clean_genre(genre_value, title=''):
                 return value
 
         keyword_mapping = [
+            (['action', 'stunt', 'martial', 'superhero', 'espionage'], 'Action'),
+            (['adventure', 'quest', 'journey', 'expedition', 'survival'], 'Adventure'),
             (['comedy', 'funny', 'humor', 'laugh', 'sitcom'], 'Comedy'),
             (['drama', 'dramatic'], 'Drama'),
+            (['biography', 'biopic', 'biographical'], 'Biography'),
+            (['history', 'historical'], 'History'),
             (['horror', 'scary', 'terror', 'fear', 'slasher'], 'Horror'),
-            (['action', 'adventure', 'stunt', 'martial'], 'Action'),
             (['thriller', 'suspense', 'tense', 'noir'], 'Thriller'),
             (['mystery', 'detective', 'whodunit'], 'Mystery'),
             (['crime', 'criminal', 'gangster', 'mafia', 'heist'], 'Crime'),
             (['war', 'military', 'combat', 'battle'], 'War'),
             (['western', 'cowboy', 'frontier'], 'Western'),
-            (['supernatural', 'paranormal', 'ghost', 'haunted'], 'Supernatural'),
+            (['supernatural', 'paranormal', 'ghost', 'haunted', 'demon', 'possession'], 'Supernatural'),
             (['romance', 'romantic', 'love story'], 'Romance'),
             (['sci-fi', 'scifi', 'science fiction', 'space', 'future', 'alien'], 'Sci-Fi'),
             (['fantasy', 'magic', 'mythic', 'dragon', 'wizard'], 'Fantasy'),
-            (['document', 'documentary'], 'Documentary'),
+            (['document', 'documentary', 'docuseries'], 'Documentary'),
             (['anim', 'cartoon', 'anime'], 'Animation'),
             (['music', 'musical', 'concert', 'band'], 'Musical'),
             (['sport', 'athletic', 'boxing', 'football', 'racing', 'basketball'], 'Sports'),
             (['family', 'kid', 'child', 'children'], 'Family'),
-            (['indie', 'independent', 'arthouse'], 'Indie'),
-            (['classic', 'vintage', 'cult', 'retro'], 'Classic'),
+            (['reality', 'competition', 'game show', 'dating show', 'makeover'], 'Reality'),
+            (['tv series', 'tv show', 'television', 'miniseries', 'limited series'], 'TV Series'),
+            (['short', 'short film', 'web video', 'youtube', 'online video'], 'Short'),
+            (['adult', 'porn', 'porno', 'x-rated', 'xxx', 'erotic', 'hentai'], 'Adult'),
         ]
 
         genre_lower = genre_clean.lower()
@@ -657,6 +761,7 @@ def clean_genre(genre_value, title=''):
         (['war', 'battle', 'soldier'], 'War'),
         (['anime', 'animated'], 'Animation'),
         (['documentary', 'untold', 'history of'], 'Documentary'),
+        (['vlog', 'youtube', 'episode clip'], 'Short'),
     ]
 
     for keywords, genre in title_keyword_mapping:
@@ -667,14 +772,23 @@ def clean_genre(genre_value, title=''):
 
 
 def filter_adult_content(row):
-    """Safely categorize adult content based on title keywords."""
-    title = str(row.get('Project', '')).lower()
-    current_genre = row.get('Genre', 'Other')
+    """Categorize explicit pornographic content based on title + metadata."""
+    title = str(row.get('Project', ''))
+    current_genre = row.get('Genre', 'Unknown')
+    raw_genre = str(row.get('_raw_genre', ''))
+    overview = str(row.get('overview', ''))
+    keywords = str(row.get('keywords', ''))
 
-    if current_genre in PROTECTED_GENRES:
-        return current_genre
+    is_explicit = detect_explicit_adult(
+        title=title,
+        genre_value=raw_genre,
+        overview=overview,
+        keywords=keywords
+    )
 
-    if any(word in title for word in ADULT_KEYWORDS):
+    row['Is_Adult'] = bool(is_explicit)
+
+    if is_explicit:
         return "Adult"
 
     return current_genre
@@ -686,10 +800,15 @@ def safe_read_csv(filepath, max_rows=2_000_000):
     Returns DataFrame or None if all methods fail.
     """
     filename = os.path.basename(filepath)
-    
+
+    try:
+        return pd.read_csv(filepath, low_memory=False, encoding='utf-8', on_bad_lines='skip', nrows=max_rows)
+    except Exception:
+        pass
+
     try:
         return pd.read_csv(filepath, low_memory=False, encoding='latin1', on_bad_lines='skip', nrows=max_rows)
-    except:
+    except Exception:
         pass
 
     try:
@@ -703,16 +822,14 @@ def safe_read_csv(filepath, max_rows=2_000_000):
         pass
 
     try:
-        return pd.read_csv(filepath, low_memory=False, engine='python',
-                           on_bad_lines='skip', nrows=max_rows)
+        return pd.read_csv(filepath, low_memory=False, engine='python', on_bad_lines='skip', nrows=max_rows)
     except Exception:
         pass
 
     try:
         chunks = []
         rows_read = 0
-        for chunk in pd.read_csv(filepath, chunksize=100000, low_memory=False,
-                                 on_bad_lines='skip'):
+        for chunk in pd.read_csv(filepath, chunksize=100000, low_memory=False, engine='python', on_bad_lines='skip'):
             chunks.append(chunk)
             rows_read += len(chunk)
             if rows_read >= max_rows:
@@ -723,6 +840,72 @@ def safe_read_csv(filepath, max_rows=2_000_000):
         log(f"All read methods failed for {filename}: {e}", "ERROR")
 
     return None
+
+
+def standardize_json_credits_to_tables(df, filename):
+    """
+    Convert TMDB-style credits files with cast/crew JSON columns into separate
+    cast and crew DataFrames where possible.
+    """
+    cast_rows = []
+    crew_rows = []
+
+    id_col = None
+    title_col = None
+
+    for candidate in ['movie_id', 'id', 'tmdb_id']:
+        if candidate in df.columns:
+            id_col = candidate
+            break
+
+    for candidate in ['title', 'movie_title', 'original_title', 'name']:
+        if candidate in df.columns:
+            title_col = candidate
+            break
+
+    for _, row in df.iterrows():
+        project_id = row.get(id_col) if id_col else None
+        project_title = row.get(title_col) if title_col else None
+
+        if 'cast' in df.columns:
+            cast_data = parse_json_like(row.get('cast'))
+            if isinstance(cast_data, list):
+                for item in cast_data:
+                    if isinstance(item, dict):
+                        cast_rows.append({
+                            'project_id': project_id,
+                            'Project': project_title,
+                            'cast_id': item.get('cast_id'),
+                            'character': item.get('character'),
+                            'credit_id': item.get('credit_id'),
+                            'gender': item.get('gender'),
+                            'id': item.get('id'),
+                            'name': item.get('name'),
+                            'order': item.get('order'),
+                            '_source_file': filename
+                        })
+
+        if 'crew' in df.columns:
+            crew_data = parse_json_like(row.get('crew'))
+            if isinstance(crew_data, list):
+                for item in crew_data:
+                    if isinstance(item, dict):
+                        crew_rows.append({
+                            'project_id': project_id,
+                            'Project': project_title,
+                            'credit_id': item.get('credit_id'),
+                            'department': item.get('department'),
+                            'gender': item.get('gender'),
+                            'id': item.get('id'),
+                            'job': item.get('job'),
+                            'name': item.get('name'),
+                            '_source_file': filename
+                        })
+
+    cast_df = pd.DataFrame(cast_rows) if cast_rows else None
+    crew_df = pd.DataFrame(crew_rows) if crew_rows else None
+
+    return cast_df, crew_df
 
 
 def process_and_merge():
@@ -751,30 +934,70 @@ def process_and_merge():
             continue
 
         try:
+            df['_source_file'] = filename
             cols_lower = [c.lower() for c in df.columns]
+            cols_lower_set = set(cols_lower)
 
-            if 'cast' in filename or ('character' in cols_lower):
-                if 'name' in cols_lower or 'cast' in cols_lower:
-                    cast_frames.append(df)
-                    log(f"Routed to CAST: {filename} ({len(df)} rows)", "DATA")
+            # --- JSON credits parser first ---
+            if ('cast' in cols_lower_set or 'crew' in cols_lower_set) and (
+                'credit_id' in cols_lower_set or 'movie_id' in cols_lower_set or 'title' in cols_lower_set
+            ):
+                parsed_cast_df, parsed_crew_df = standardize_json_credits_to_tables(df, filename)
+
+                if parsed_cast_df is not None and len(parsed_cast_df) > 0:
+                    cast_frames.append(parsed_cast_df)
+                    log(f"Parsed JSON credits to CAST: {filename} ({len(parsed_cast_df)} rows)", "DATA")
+
+                if parsed_crew_df is not None and len(parsed_crew_df) > 0:
+                    crew_frames.append(parsed_crew_df)
+                    log(f"Parsed JSON credits to CREW: {filename} ({len(parsed_crew_df)} rows)", "DATA")
+
+                if 'credits' in filename or ('cast' in cols_lower_set and 'crew' in cols_lower_set):
                     continue
 
-            if 'crew' in filename or 'director' in filename:
-                if 'job' in cols_lower or 'department' in cols_lower:
-                    crew_frames.append(df)
-                    log(f"Routed to CREW: {filename} ({len(df)} rows)", "DATA")
-                    continue
+            # --- CAST routing ---
+            cast_signals = (
+                'cast' in filename or
+                'actor' in filename or
+                'character' in cols_lower_set or
+                ('cast_id' in cols_lower_set and 'name' in cols_lower_set)
+            )
+            if cast_signals:
+                cast_frames.append(df)
+                log(f"Routed to CAST: {filename} ({len(df)} rows)", "DATA")
+                continue
 
-            if 'review' in filename:
+            # --- CREW routing ---
+            crew_signals = (
+                'crew' in filename or
+                'credits' in filename or
+                'department' in cols_lower_set or
+                'job' in cols_lower_set or
+                'known_for_department' in cols_lower_set or
+                'credit_id' in cols_lower_set or
+                'director' in cols_lower_set or
+                'writer' in cols_lower_set or
+                'producer' in cols_lower_set or
+                'screenplay' in cols_lower_set
+            )
+            if crew_signals:
+                crew_frames.append(df)
+                log(f"Routed to CREW: {filename} ({len(df)} rows)", "DATA")
+                continue
+
+            # --- Reviews ---
+            if 'review' in filename or 'reviews' in cols_lower_set:
                 review_frames.append(df)
                 log(f"Routed to REVIEWS: {filename} ({len(df)} rows)", "DATA")
                 continue
 
+            # --- Genres lookup table ---
             if 'genre' in filename and len(df) < 100:
                 genre_frames.append(df)
                 log(f"Routed to GENRES: {filename} ({len(df)} rows)", "DATA")
                 continue
 
+            # --- Normalize movie/content columns ---
             name_cols = ['title', 'Series_Title', 'movie_title', 'original_title',
                          'track_name', 'name', 'show_title', 'Name']
             for c in name_cols:
@@ -812,7 +1035,7 @@ def process_and_merge():
             if 'Project' in df.columns:
                 if "video" in filename or "youtube" in filename:
                     if 'Genre' not in df.columns or df['Genre'].isna().all():
-                        df['Genre'] = 'Reality'
+                        df['Genre'] = 'Short'
 
                 if 'Sentiment_Score' not in df.columns:
                     df['Sentiment_Score'] = 0.5
@@ -824,14 +1047,18 @@ def process_and_merge():
                     df['Lead_Talent'] = 'Ensemble'
                 if 'id' not in df.columns:
                     df['id'] = [
-                        hashlib.md5(str(x).encode()).hexdigest()[:12]
+                        hashlib.md5(f"{filename}_{x}".encode()).hexdigest()[:12]
                         for x in range(len(df))
                     ]
 
                 movie_frames.append(df)
                 log(f"Routed to MOVIES: {filename} ({len(df)} rows)", "DATA")
             else:
-                log(f"Skipping {filename} (no title column found)", "WARNING")
+                if crew_signals:
+                    crew_frames.append(df)
+                    log(f"Recovered to CREW despite no title column: {filename} ({len(df)} rows)", "DATA")
+                else:
+                    log(f"Skipping {filename} (no title column found)", "WARNING")
 
         except Exception as e:
             log(f"Error processing {filename}: {e}", "ERROR")
@@ -873,12 +1100,19 @@ def process_and_merge():
         else:
             final_df['Lead_Talent'] = 'Ensemble'
 
+        final_df['_raw_genre'] = final_df.get('Genre', 'Unknown')
+
         log("Cleaning and mapping genres...", "PROCESS")
         final_df['Genre'] = final_df.apply(
             lambda row: clean_genre(row.get('Genre', ''), row.get('Project', '')),
             axis=1
         )
+
         final_df['Genre'] = final_df.apply(filter_adult_content, axis=1)
+        if 'Is_Adult' not in final_df.columns:
+            final_df['Is_Adult'] = final_df['Genre'].eq('Adult')
+
+        final_df['Content_Type'] = final_df.apply(infer_content_type, axis=1)
 
         log("Removing duplicates...", "PROCESS")
         final_df['_norm_title'] = final_df['Project'].apply(normalize_title)
@@ -904,12 +1138,13 @@ def process_and_merge():
         log(f"Removed {norm_removed} normalized duplicates", "DATA")
         log(f"After deduplication: {len(final_df)} unique projects", "DATA")
 
-                # Keep raw popularity only
         final_df = final_df.sort_values('Popularity_Score', ascending=False)
         final_df = final_df.head(TARGET_MOVIE_COUNT)
-        log(f"Selected top {TARGET_MOVIE_COUNT} movies by popularity", "DATA")
+        log(f"Selected top {TARGET_MOVIE_COUNT} projects by popularity", "DATA")
 
-        existing_core = [c for c in CORE_COLUMNS if c in final_df.columns]
+        preferred_core = ['Project', 'Genre', 'Content_Type', 'Is_Adult',
+                          'Sentiment_Score', 'Popularity_Score', 'Lead_Talent', 'id']
+        existing_core = [c for c in preferred_core if c in final_df.columns]
         other_cols = [c for c in final_df.columns if c not in existing_core]
 
         def count_non_empty(col):
@@ -925,7 +1160,7 @@ def process_and_merge():
 
         log("Genre Distribution:", "DATA")
         genre_counts = final_df['Genre'].value_counts()
-        for genre, count in genre_counts.head(20).items():
+        for genre, count in genre_counts.head(24).items():
             pct = (count / len(final_df)) * 100
             log(f"  {genre}: {count} ({pct:.1f}%)", "INFO")
 
@@ -933,20 +1168,29 @@ def process_and_merge():
         if unknown_count > 0:
             log(f"  ⚠️ Unknown: {unknown_count} ({(unknown_count/len(final_df))*100:.1f}%)", "WARNING")
 
+        adult_count = final_df['Genre'].eq('Adult').sum()
+        if adult_count > 0:
+            log(f"  Adult flagged: {adult_count} ({(adult_count/len(final_df))*100:.1f}%)", "WARNING")
+
+        log("Content Type Distribution:", "DATA")
+        content_counts = final_df['Content_Type'].value_counts()
+        for ct, count in content_counts.items():
+            pct = (count / len(final_df)) * 100
+            log(f"  {ct}: {count} ({pct:.1f}%)", "INFO")
+
         log("Data Quality Report:", "DATA")
         log(f"  Total projects: {len(final_df)}", "INFO")
         log(f"  Unique genres: {final_df['Genre'].nunique()}", "INFO")
         log(f"  Missing titles: {final_df['Project'].isna().sum()}", "INFO")
         log(f"  Sentiment range: {final_df['Sentiment_Score'].min():.2f} to {final_df['Sentiment_Score'].max():.2f}", "INFO")
         log(f"  Popularity range: {final_df['Popularity_Score'].min():.1f} to {final_df['Popularity_Score'].max():.1f}", "INFO")
-        
 
         ensemble_count = (final_df['Lead_Talent'] == 'Ensemble').sum()
         log(f"  Generic Lead Talent (Ensemble): {ensemble_count} ({(ensemble_count/len(final_df))*100:.1f}%)", "INFO")
 
         final_df.to_csv(TARGET_MOVIES, index=False)
         log(f"MOVIES saved: {len(final_df)} projects → {TARGET_MOVIES}", "SUCCESS")
-        log(f"Columns: {list(final_df.columns[:8])}... ({len(final_df.columns)} total)", "INFO")
+        log(f"Columns: {list(final_df.columns[:10])}... ({len(final_df.columns)} total)", "INFO")
     else:
         log("No movie data found to process!", "ERROR")
 
@@ -985,9 +1229,9 @@ def process_and_merge():
 
 def main():
     """Main entry point."""
-    print("\n - prep_data.py:988" + "=" * 50)
-    print("🎬 GENRE SYNC ANALYTICS DATA PIPELINE v2.0 - prep_data.py:989")
-    print("= - prep_data.py:990" * 50 + "\n")
+    print("\n - prep_data.py:1232" + "=" * 50)
+    print("🎬 GENRE SYNC ANALYTICS DATA PIPELINE v2.1.1 - prep_data.py:1233")
+    print("= - prep_data.py:1234" * 50 + "\n")
 
     refresh_flag = "--refresh" in sys.argv
 
@@ -1002,9 +1246,9 @@ def main():
     process_and_merge()
     cleanup_raw_data()
 
-    print("\n - prep_data.py:1005" + "=" * 50)
-    print("✅ All done! Your data is ready for Genre Sync Analytics. - prep_data.py:1006")
-    print("= - prep_data.py:1007" * 50 + "\n")
+    print("\n - prep_data.py:1249" + "=" * 50)
+    print("✅ All done! Your data is ready for Genre Sync Analytics. - prep_data.py:1250")
+    print("= - prep_data.py:1251" * 50 + "\n")
 
 
 if __name__ == "__main__":
