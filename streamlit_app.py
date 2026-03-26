@@ -707,7 +707,7 @@ with tab1:
         ),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=10, b=80),
+        margin=dict(l=0, r=0, t=25, b=80),
         xaxis_title="Sentiment ROI (-1 to 1)",
         yaxis_title="Market Appetite Index"
     )
