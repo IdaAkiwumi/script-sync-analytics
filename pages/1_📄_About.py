@@ -210,7 +210,7 @@ st.markdown("""
 <div class="cta-box">
 <h2>🚀 Ready to Explore?</h2>
 <p style="color: #A3AABF; font-size: 1.1rem;">
-Select <strong>Genre Sync Dashboard</strong> from the sidebar navigation to launch the dashboard.
+Select <strong>streamlit app</strong> from the sidebar navigation to launch the dashboard.
 </p>
 </div>
 """, unsafe_allow_html=True)
