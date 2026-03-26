@@ -1,6 +1,6 @@
 """
 PROJECT: Genre Sync Analytics
-VERSION: 1.0.4
+VERSION: 1.0.0
 AUTHOR: Ida Akiwumi
 ROLE: Product Architect | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
@@ -17,7 +17,7 @@ IDEAL FOR:
 """
 
 __author__ = "Ida Akiwumi"
-__version__ = "1.0.4"
+__version__ = "1.0.0"
 __license__ = "Proprietary"
 __status__ = "Production / Portfolio"
 
