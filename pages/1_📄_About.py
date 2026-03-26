@@ -65,7 +65,7 @@ st.markdown("""
 
 # --- SIDEBAR CONTENT (so sidebar always shows something) ---
 with st.sidebar:
-    st.title("🎬 Navigation")
+    # st.title("🎬 Navigation")
     st.info("Use the page selector above to switch between the Dashboard and About page.")
     st.markdown("---")
     st.markdown("**Quick Links:**")

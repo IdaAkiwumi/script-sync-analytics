@@ -264,14 +264,14 @@ with st.spinner('🎬 Loading Market Intelligence...'):
 df_full = df_full.loc[:, ~df_full.columns.duplicated(keep='first')]
 
 if "active_scenario_name" not in st.session_state:
-    st.session_state.active_scenario_name = "Default (Industry Standard)"
+    st.session_state.active_scenario_name = "Default"
 
 # Decoupled state for the expander
 if "import_expanded" not in st.session_state:
     st.session_state.import_expanded = False
 
 with st.sidebar:
-    st.title("🎬 Strategy Controls")
+    # st.title("🎬 Strategy Controls")
     st.markdown(f"**Current View:** `{st.session_state.active_scenario_name}`")
     
     all_genres = sorted([str(g) for g in df_full['Genre'].unique() if pd.notna(g)])
