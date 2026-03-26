@@ -572,40 +572,34 @@ with tab1:
 
     # FIX: Custom color palette with 30+ unique colors for genres
     GENRE_COLORS = {
-        'Comedy': '#FFD700',        # Gold
-        'Drama': '#4169E1',         # Royal Blue
-        'Action': '#FF4500',        # Orange Red
-        'Horror': '#8B0000',        # Dark Red
-        'Thriller': '#483D8B',      # Dark Slate Blue
-        'Sci-Fi': '#00CED1',        # Dark Turquoise
-        'Fantasy': '#9932CC',       # Dark Orchid
-        'Romance': '#FF69B4',       # Hot Pink
-        'Animation': '#32CD32',     # Lime Green
-        'Documentary': '#808080',   # Gray
-        'Crime': '#2F4F4F',         # Dark Slate Gray
-        'Family': '#FFA07A',        # Light Salmon
-        'Musical': '#FF1493',       # Deep Pink
-        'War': '#556B2F',           # Dark Olive Green
-        'Western': '#D2691E',       # Chocolate
-        'Historical': '#8B4513',    # Saddle Brown
-        'Spy': '#191970',           # Midnight Blue
-        'Sports': '#228B22',        # Forest Green
-        'International': '#DB7093', # Pale Violet Red
-        'Indie': '#20B2AA',         # Light Sea Green
-        'Classic': '#DAA520',       # Goldenrod
-        'Cult': '#800080',          # Purple
-        'Holiday': '#DC143C',       # Crimson
-        'Faith': '#F0E68C',         # Khaki
-        'LGBTQ+': '#FF00FF',        # Magenta
-        'Reality': '#00FA9A',       # Medium Spring Green
-        'TV Series': '#6495ED',     # Cornflower Blue
-        'Short': '#BC8F8F',         # Rosy Brown
-        'Adult': '#A52A2A',         # Brown
-        'Unknown': '#696969',       # Dim Gray
-        'Other': '#778899',         # Light Slate Gray
-        'Misc': '#708090',          # Slate Gray
-        'Streaming/YouTube': '#FF6347',  # Tomato
-    }
+    'Comedy': '#FFD700',        # Gold
+    'Drama': '#4169E1',         # Royal Blue
+    'Action': '#FF4500',        # Orange Red
+    'Horror': '#8B0000',        # Dark Red
+    'Thriller': '#483D8B',      # Dark Slate Blue
+    'Sci-Fi': '#00CED1',        # Dark Turquoise
+    'Fantasy': '#9932CC',       # Dark Orchid
+    'Romance': '#FF69B4',       # Hot Pink
+    'Animation': '#32CD32',     # Lime Green
+    'Documentary': '#808080',   # Gray
+    'Family': '#FFA07A',        # Light Salmon
+    'TV Series': '#6495ED',     # Cornflower Blue
+    'Reality': '#00FA9A',       # Medium Spring Green
+    'International': '#DB7093', # Pale Violet Red
+    'Musical': '#FF1493',       # Deep Pink
+    'War': '#556B2F',           # Dark Olive Green
+    'Western': '#D2691E',       # Chocolate
+    'Crime': '#2F4F4F',         # Dark Slate Gray
+    'Mystery': '#4B0082',       # Indigo
+    'Supernatural': '#663399',  # Rebecca Purple
+    'Indie': '#20B2AA',         # Light Sea Green
+    'Classic': '#DAA520',       # Goldenrod
+    'Sports': '#228B22',        # Forest Green
+    'Short': '#BC8F8F',         # Rosy Brown
+    'Adult': '#A52A2A',         # Brown
+    'Unknown': '#696969',       # Dim Gray
+    'Other': '#778899',         # Light Slate Gray
+}
     
     # Get unique genres in the current data
     unique_genres = display_df['Genre'].unique().tolist()
