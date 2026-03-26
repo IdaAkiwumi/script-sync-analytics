@@ -54,15 +54,8 @@ init_state()
 st.set_page_config(
     page_title="Genre Sync Analytics | Designed by Ida Akiwumi", 
     page_icon="🎬",
-    layout="wide"
-)
-
-# This doesn't change the filename, just how Streamlit refers to your app
-st.set_page_config(
-    page_title="Genre Sync Analytics | Designed by Ida Akiwumi", 
-    page_icon="🎬",
     layout="wide",
-    initial_sidebar_state="expanded"  # Optional: sidebar starts open
+    initial_sidebar_state="expanded"
 )
 
 # SEO-friendly static header that renders early
@@ -253,6 +246,16 @@ def load_real_data():
         return None
 
 
+def truncate_title(title, max_words=6):
+    """Truncate title to max_words and add ellipsis if longer"""
+    if pd.isna(title):
+        return "Unknown"
+    words = str(title).split()
+    if len(words) > max_words:
+        return ' '.join(words[:max_words]) + '...'
+    return str(title)
+
+
 # --- 4. SIDEBAR STUDIO CONTROLS ---
 
 # Branded loading state
@@ -271,7 +274,6 @@ if "import_expanded" not in st.session_state:
     st.session_state.import_expanded = False
 
 with st.sidebar:
-    # st.title("🎬 Strategy Controls")
     st.markdown(f"**Current View:** `{st.session_state.active_scenario_name}`")
     
     all_genres = sorted([str(g) for g in df_full['Genre'].unique() if pd.notna(g)])
@@ -407,8 +409,6 @@ with st.sidebar:
         
         **Sourced March 2026.**
         """)
-    
-   
     
     st.markdown("---")
     st.markdown("Follow me on:")
@@ -573,6 +573,9 @@ with tab1:
     display_df = df.copy()
     display_df = display_df.loc[:, ~display_df.columns.duplicated(keep='first')]
     
+    # Truncate long movie titles for cleaner hover tooltips
+    display_df['Display_Title'] = display_df['Project'].apply(truncate_title)
+    
     active_genres_str = ", ".join(genre_filter) if genre_filter else "All Genres"
 
     y_max = display_df['Popularity_Score'].max()
@@ -587,36 +590,36 @@ with tab1:
     if "Lead_Talent" in display_df.columns:
         hover_data_config["Lead_Talent"] = True
 
-    # FIX: Custom color palette with 30+ unique colors for genres
+    # Custom color palette with 30+ unique colors for genres
     GENRE_COLORS = {
-    'Comedy': '#FFD700',        # Gold
-    'Drama': '#4169E1',         # Royal Blue
-    'Action': '#FF4500',        # Orange Red
-    'Horror': '#8B0000',        # Dark Red
-    'Thriller': '#483D8B',      # Dark Slate Blue
-    'Sci-Fi': '#00CED1',        # Dark Turquoise
-    'Fantasy': '#9932CC',       # Dark Orchid
-    'Romance': '#FF69B4',       # Hot Pink
-    'Animation': '#32CD32',     # Lime Green
-    'Documentary': '#808080',   # Gray
-    'Family': '#FFA07A',        # Light Salmon
-    'TV Series': '#6495ED',     # Cornflower Blue
-    'Reality': '#00FA9A',       # Medium Spring Green
-    'International': '#DB7093', # Pale Violet Red
-    'Musical': '#FF1493',       # Deep Pink
-    'War': '#556B2F',           # Dark Olive Green
-    'Western': '#D2691E',       # Chocolate
-    'Crime': '#2F4F4F',         # Dark Slate Gray
-    'Mystery': '#4B0082',       # Indigo
-    'Supernatural': '#663399',  # Rebecca Purple
-    'Indie': '#20B2AA',         # Light Sea Green
-    'Classic': '#DAA520',       # Goldenrod
-    'Sports': '#228B22',        # Forest Green
-    'Short': '#BC8F8F',         # Rosy Brown
-    'Adult': '#A52A2A',         # Brown
-    'Unknown': '#696969',       # Dim Gray
-    'Other': '#778899',         # Light Slate Gray
-}
+        'Comedy': '#FFD700',        # Gold
+        'Drama': '#4169E1',         # Royal Blue
+        'Action': '#FF4500',        # Orange Red
+        'Horror': '#8B0000',        # Dark Red
+        'Thriller': '#483D8B',      # Dark Slate Blue
+        'Sci-Fi': '#00CED1',        # Dark Turquoise
+        'Fantasy': '#9932CC',       # Dark Orchid
+        'Romance': '#FF69B4',       # Hot Pink
+        'Animation': '#32CD32',     # Lime Green
+        'Documentary': '#808080',   # Gray
+        'Family': '#FFA07A',        # Light Salmon
+        'TV Series': '#6495ED',     # Cornflower Blue
+        'Reality': '#00FA9A',       # Medium Spring Green
+        'International': '#DB7093', # Pale Violet Red
+        'Musical': '#FF1493',       # Deep Pink
+        'War': '#556B2F',           # Dark Olive Green
+        'Western': '#D2691E',       # Chocolate
+        'Crime': '#2F4F4F',         # Dark Slate Gray
+        'Mystery': '#4B0082',       # Indigo
+        'Supernatural': '#663399',  # Rebecca Purple
+        'Indie': '#20B2AA',         # Light Sea Green
+        'Classic': '#DAA520',       # Goldenrod
+        'Sports': '#228B22',        # Forest Green
+        'Short': '#BC8F8F',         # Rosy Brown
+        'Adult': '#A52A2A',         # Brown
+        'Unknown': '#696969',       # Dim Gray
+        'Other': '#778899',         # Light Slate Gray
+    }
     
     # Get unique genres in the current data
     unique_genres = display_df['Genre'].unique().tolist()
@@ -641,14 +644,14 @@ with tab1:
         y="Popularity_Score", 
         size="Popularity_Score", 
         color="Genre", 
-        hover_name="Project",
+        hover_name="Display_Title",  # Uses truncated title
         hover_data=hover_data_config,
         range_x=[-0.01, 1.08], 
         range_y=[0, y_upper_limit],
         template="plotly_dark",
         size_max=35, 
         height=500,
-        color_discrete_map=GENRE_COLORS  # Use our custom color map
+        color_discrete_map=GENRE_COLORS
     )
     
     fig_scatter.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
@@ -691,7 +694,7 @@ with tab2:
         color='Genre', template="plotly_dark",
         height=450,
         title="Active Market Saturation (Selected Genres)",
-        color_discrete_map=GENRE_COLORS  # Use same colors for consistency
+        color_discrete_map=GENRE_COLORS
     )
     fig_bar.update_layout(
         margin=dict(l=0, r=0, t=50, b=0),
