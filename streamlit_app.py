@@ -57,6 +57,15 @@ st.set_page_config(
     layout="wide"
 )
 
+# SEO-friendly static header that renders early
+st.markdown("""
+<div style="display:none;" aria-hidden="true">
+Genre Sync Analytics: Film industry ROI dashboard for genre strategy, 
+market sentiment analysis, and blue ocean opportunity identification. 
+A product analytics tool for studio executives and film producers by Ida Akiwumi.
+</div>
+""", unsafe_allow_html=True)
+
 st.markdown("""
     <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
