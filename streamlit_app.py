@@ -1,6 +1,6 @@
 """
 PROJECT: Genre Sync Analytics
-VERSION: 1.0.2
+VERSION: 1.0.3
 AUTHOR: Ida Akiwumi
 ROLE: Product Architect | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
@@ -17,11 +17,12 @@ IDEAL FOR:
 """
 
 __author__ = "Ida Akiwumi"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __license__ = "Proprietary"
 __status__ = "Production / Portfolio"
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
 import os
@@ -47,6 +48,12 @@ def init_state():
     # Default genres for comparison
     if "default_genres" not in st.session_state:
         st.session_state.default_genres = None
+    # Selected project from scatter plot click
+    if "selected_project" not in st.session_state:
+        st.session_state.selected_project = None
+    # Track if selection just happened (for scroll trigger)
+    if "just_selected" not in st.session_state:
+        st.session_state.just_selected = False
 
 init_state()
 
@@ -135,6 +142,38 @@ st.markdown("""
     .empty-state p {
         color: #A3AABF;
         margin: 5px 0;
+    }
+    
+    /* Selected project card styling */
+    .selected-project-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #262730 100%);
+        border: 2px solid #ffd600;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px 0;
+    }
+    
+    .selected-project-card h3 {
+        color: #ffd600;
+        margin: 0 0 15px 0;
+        font-size: 1.2rem;
+    }
+    
+    .selected-project-card .project-title {
+        color: #ffffff;
+        font-size: 1.4rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .selected-project-card .project-meta {
+        color: #A3AABF;
+        font-size: 0.95rem;
+        line-height: 1.8;
+    }
+    
+    .selected-project-card .project-meta strong {
+        color: #ffd600;
     }
 
     @media print {
@@ -254,6 +293,23 @@ def truncate_title(title, max_words=6):
     if len(words) > max_words:
         return ' '.join(words[:max_words]) + '...'
     return str(title)
+
+
+def scroll_to_element(element_id):
+    """Inject JavaScript to scroll to a specific element"""
+    components.html(
+        f"""
+        <script>
+            setTimeout(function() {{
+                const element = window.parent.document.getElementById('{element_id}');
+                if (element) {{
+                    element.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+                }}
+            }}, 100);
+        </script>
+        """,
+        height=0
+    )
 
 
 # --- 4. SIDEBAR STUDIO CONTROLS ---
@@ -449,6 +505,7 @@ with st.expander("ℹ️ STRATEGY GUIDE: How to use Genre Sync"):
     2.  **Evaluate Market Appetite:** Check the "Heat Index"—is the global audience currently 'hungry' for this content?
     3.  **Assess Market Opportunity:** A high bar here indicates a **Blue Ocean** gap where your narrative can stand out without fighting "Red Ocean" saturation.
     4.  **Analyze Comps:** Hover over the bubbles in the **Narrative Performance** tab to see the specific projects and talent currently defining your selected market's ROI.
+    5.  **Click any bubble** to view detailed project information below the chart.
     
     ### **Key Metrics Explained**
     | Metric | Green | Yellow | Red |
@@ -576,6 +633,9 @@ with tab1:
     # Truncate long movie titles for cleaner hover tooltips
     display_df['Display_Title'] = display_df['Project'].apply(truncate_title)
     
+    # Reset index to ensure clean point indexing for click events
+    display_df = display_df.reset_index(drop=True)
+    
     active_genres_str = ", ".join(genre_filter) if genre_filter else "All Genres"
 
     y_max = display_df['Popularity_Score'].max()
@@ -677,13 +737,92 @@ with tab1:
     )
     
     st.markdown(f"""
-        <p style="color:#888; font-size:0.8rem; margin-bottom:10px; padding-left:2px;">
+        <p style="color:#888; font-size:0.8rem; margin-bottom:5px; padding-left:2px;">
             Showing <strong>{len(display_df)}</strong> market competitors in: 
             <span style="color:#dc3545;">{active_genres_str}</span>
+            <br><span style="font-style: italic;">💡 Click any bubble to view project details</span>
         </p>
     """, unsafe_allow_html=True)
     
-    st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter")
+    # Render chart with click selection enabled
+    selection = st.plotly_chart(
+        fig_scatter, 
+        use_container_width=True, 
+        key="performance_scatter",
+        on_select="rerun",
+        selection_mode=["points"]
+    )
+    
+    # Handle click selection
+    if selection and selection.selection and len(selection.selection.points) > 0:
+        # Get the clicked point's index
+        point_data = selection.selection.points[0]
+        point_idx = point_data.get("point_index", None)
+        
+        if point_idx is not None and point_idx < len(display_df):
+            new_selection = display_df.iloc[point_idx]['Project']
+            # Check if this is a new selection
+            if new_selection != st.session_state.selected_project:
+                st.session_state.selected_project = new_selection
+                st.session_state.just_selected = True
+            else:
+                st.session_state.just_selected = False
+
+    # --- SELECTED PROJECT DETAILS CARD ---
+    if st.session_state.selected_project:
+        selected_row = df[df['Project'] == st.session_state.selected_project]
+        
+        if not selected_row.empty:
+            row = selected_row.iloc[0]
+            
+            # Get sentiment label for this specific project
+            proj_sentiment = row['Sentiment_Score']
+            if proj_sentiment > 0.6:
+                proj_sent_color, proj_sent_label = "#28a745", "High"
+            elif proj_sentiment > 0.4:
+                proj_sent_color, proj_sent_label = "#ffc107", "Moderate"
+            elif proj_sentiment > 0:
+                proj_sent_color, proj_sent_label = "#888", "Neutral"
+            else:
+                proj_sent_color, proj_sent_label = "#dc3545", "Low"
+            
+            # Show toast notification on new selection
+            if st.session_state.just_selected:
+                st.toast(f"⬇️ Project details loaded below", icon="🎬")
+                st.session_state.just_selected = False
+            
+            # Anchor for scrolling - place BEFORE the card
+            st.markdown('<div id="selected-project-details"></div>', unsafe_allow_html=True)
+            
+            # Header with clear button
+            header_col1, header_col2 = st.columns([4, 1])
+            with header_col1:
+                st.markdown("### 🎯 Selected Project Details")
+            with header_col2:
+                if st.button("✕ Clear", key="clear_selection", type="secondary"):
+                    st.session_state.selected_project = None
+                    st.session_state.just_selected = False
+                    st.rerun()
+            
+            # Project details card
+            st.markdown(f"""
+                <div class="selected-project-card">
+                    <div class="project-title">🎬 {row['Project']}</div>
+                    <div class="project-meta">
+                        <strong>Genre:</strong> {row['Genre']}<br>
+                        <strong>Lead Talent:</strong> {row.get('Lead_Talent', 'N/A')}<br>
+                        <strong>Sentiment ROI:</strong> <span style="color: {proj_sent_color};">{proj_sent_label}</span> ({proj_sentiment:.2f})<br>
+                        <strong>Market Appetite Score:</strong> {row['Popularity_Score']:.1f}
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Auto-scroll to the details card
+            scroll_to_element("selected-project-details")
+        else:
+            # Project not found in current filter - clear selection
+            st.session_state.selected_project = None
+            st.session_state.just_selected = False
 
 with tab2:
     genre_counts = df['Genre'].value_counts().reset_index()
@@ -711,9 +850,21 @@ with tab2:
     )
     st.plotly_chart(fig_bar, use_container_width=True, key="genre_distribution_bar")
 
-with st.expander("📂 View Full Intelligence Ledger"):
+# --- FULL INTELLIGENCE LEDGER ---
+with st.expander("📂 View Full Intelligence Ledger", expanded=st.session_state.selected_project is not None):
     # FIX: Ensure no duplicate columns in the displayed dataframe
     ledger_df = df.loc[:, ~df.columns.duplicated(keep='first')]
-    st.dataframe(ledger_df, use_container_width=True)
+    
+    # If a project is selected, highlight/filter to it
+    if st.session_state.selected_project:
+        st.markdown(f"**Filtered to:** {st.session_state.selected_project}")
+        filtered_ledger = ledger_df[ledger_df['Project'] == st.session_state.selected_project]
+        if not filtered_ledger.empty:
+            st.dataframe(filtered_ledger, use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        st.markdown("**Full Ledger:**")
+    
+    st.dataframe(ledger_df, use_container_width=True, hide_index=True)
 
 st.caption(f"Genre Sync Analytics v{__version__} | Strategic Intelligence by Ida Akiwumi.")
