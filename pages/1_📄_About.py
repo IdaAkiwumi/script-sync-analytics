@@ -63,6 +63,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- SIDEBAR CONTENT (so sidebar always shows something) ---
+with st.sidebar:
+    st.title("🎬 Navigation")
+    st.info("Use the page selector above to switch between the Dashboard and About page.")
+    st.markdown("---")
+    st.markdown("**Quick Links:**")
+    st.markdown("[LinkedIn → Ida Akiwumi](https://www.linkedin.com/in/idaa11)")
+
 # --- HEADER ---
 st.title("🎬 About Genre Sync Analytics")
 st.markdown("### Strategic ROI Intelligence for the Entertainment Industry")
@@ -202,15 +210,10 @@ st.markdown("""
 <div class="cta-box">
 <h2>🚀 Ready to Explore?</h2>
 <p style="color: #A3AABF; font-size: 1.1rem;">
-Return to the main dashboard to start analyzing genre opportunities.
+Select <strong>streamlit_app</strong> from the sidebar navigation to launch the dashboard.
 </p>
 </div>
 """, unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    if st.button("🎬 Launch Genre Sync Dashboard", use_container_width=True, type="primary"):
-        st.switch_page("streamlit_app.py")  # Adjust filename if different
 
 # --- CONTACT & LINKS ---
 st.markdown("---")
@@ -223,12 +226,12 @@ with link_col1:
     st.markdown("[→ Ida Akiwumi](https://www.linkedin.com/in/idaa11)")
 
 with link_col2:
-    st.markdown("**Portfolio**")
-    st.markdown("[→ View More Projects](#)")  # Add your portfolio URL
+     st.markdown("**Website**")
+     st.markdown("[→ Ida Akiwumi](https://idaakiwumi.com)")
 
 with link_col3:
     st.markdown("**GitHub**")
-    st.markdown("[→ Source Code](#)")  # Add your repo URL if public
+    st.markdown("[→ Source Code](https://github.com/idaakiwumi/genre-sync-analytics)")
 
 # --- FOOTER ---
 st.markdown("---")
@@ -236,7 +239,7 @@ st.caption("Genre Sync Analytics v1.0.2 | © 2024 Ida Akiwumi | Built with Strea
 
 # --- HIDDEN SEO TEXT (visible to crawlers) ---
 st.markdown("""
-<div style="position: absolute; left: -9999px; opacity: 0;">
+<div style="position: absolute; left: -9999px; opacity: 0;" aria-hidden="true">
 Genre Sync Analytics is a film industry analytics dashboard for movie market 
 analysis, entertainment ROI tracking, and genre strategy planning. Built by 
 Ida Akiwumi, Product Architect specializing in data visualization for creative 
