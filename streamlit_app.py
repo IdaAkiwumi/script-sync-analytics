@@ -1,6 +1,6 @@
 """
 PROJECT: Genre Sync Analytics
-VERSION: 1.0.3
+VERSION: 1.0.4
 AUTHOR: Ida Akiwumi
 ROLE: Product Architect | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
@@ -17,7 +17,7 @@ IDEAL FOR:
 """
 
 __author__ = "Ida Akiwumi"
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __license__ = "Proprietary"
 __status__ = "Production / Portfolio"
 
@@ -36,24 +36,20 @@ def init_state():
         st.session_state.data_loaded = False
     if "analysis_results" not in st.session_state:
         st.session_state.analysis_results = None
-    # Storage for saved scenarios
     if "saved_filters" not in st.session_state:
         st.session_state.saved_filters = {}
-    # First visit tracking for welcome message
     if "first_visit" not in st.session_state:
         st.session_state.first_visit = True
-    # Track if user has interacted with filters
     if "user_has_interacted" not in st.session_state:
         st.session_state.user_has_interacted = False
-    # Default genres for comparison
     if "default_genres" not in st.session_state:
         st.session_state.default_genres = None
-    # Selected project from scatter plot click
     if "selected_project" not in st.session_state:
         st.session_state.selected_project = None
-    # Track if selection just happened (for scroll trigger)
     if "just_selected" not in st.session_state:
         st.session_state.just_selected = False
+    if "confirm_clear" not in st.session_state:
+        st.session_state.confirm_clear = False
 
 init_state()
 
@@ -65,7 +61,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# SEO-friendly static header that renders early
 st.markdown("""
 <div style="display:none;" aria-hidden="true">
 Genre Sync Analytics: Film industry ROI dashboard for genre strategy, 
@@ -78,7 +73,6 @@ st.markdown("""
     <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
     
-    /* High-contrast Slate for WCAG compliance on dark background */
     .metric-caption {
         color: #A3AABF; 
         font-size: 0.9rem;
@@ -104,7 +98,6 @@ st.markdown("""
         border: 1px solid #333;
     }
     
-    /* Welcome banner styling */
     .welcome-banner {
         background: linear-gradient(135deg, #262730 0%, #1a1a2e 100%);
         border: 1px solid #ffd600;
@@ -124,7 +117,6 @@ st.markdown("""
         line-height: 1.6;
     }
     
-    /* Empty state styling */
     .empty-state {
         text-align: center;
         padding: 40px;
@@ -144,7 +136,6 @@ st.markdown("""
         margin: 5px 0;
     }
     
-    /* Selected project card styling */
     .selected-project-card {
         background: linear-gradient(135deg, #1a1a2e 0%, #262730 100%);
         border: 2px solid #ffd600;
@@ -178,15 +169,11 @@ st.markdown("""
 
     @media print {
         [data-testid="stSidebar"], [data-testid="stHeader"] { display: none !important; }
-        
-        /* Force Metric Card text to black for white paper */
         .metric-caption, .stMetricValue { color: #000000 !important; }
         .metric-card { background-color: #ffffff !important; border: 1px solid #000 !important; }
-        
         .main .block-container { max-width: 100% !important; padding: 0 !important; }
     }
     
-    /* Mobile responsiveness */
     @media (max-width: 768px) {
         .metric-card { font-size: 0.85rem !important; padding: 10px !important; }
         .compact-header { flex-direction: column !important; gap: 8px; font-size: 0.9rem; }
@@ -216,11 +203,8 @@ def load_real_data():
         
         if os.path.exists(movies_path):
             m_df = pd.read_csv(movies_path, engine='python', on_bad_lines='skip')
-            
-            # FIX: Remove any duplicate columns immediately after loading
             m_df = m_df.loc[:, ~m_df.columns.duplicated(keep='first')]
             
-            # Rename columns if they exist with original names (and target doesn't exist)
             rename_map = {
                 'title': 'Project',
                 'vote_average': 'Sentiment_Score',
@@ -246,10 +230,8 @@ def load_real_data():
             if 'Genre' in m_df.columns:
                 m_df['Genre'] = m_df['Genre'].apply(clean_genres)
 
-            # Only merge cast data if Lead_Talent doesn't already exist
             if 'Lead_Talent' not in m_df.columns and os.path.exists(cast_path):
                 c_df = pd.read_csv(cast_path, engine='python', on_bad_lines='skip')
-                # FIX: Remove duplicate columns from cast data too
                 c_df = c_df.loc[:, ~c_df.columns.duplicated(keep='first')]
                 if 'id' in m_df.columns and 'id' in c_df.columns:
                     m_df = pd.merge(m_df, c_df[['id', 'name']], on='id', how='left')
@@ -260,14 +242,11 @@ def load_real_data():
                 if m_df['Sentiment_Score'].max() > 1:
                     m_df['Sentiment_Score'] = (m_df['Sentiment_Score'] - 5) / 5
             
-            # FIX: Final safety checks - ensure no duplicate columns
             m_df = m_df.loc[:, ~m_df.columns.duplicated(keep='first')]
             
-            # FIX: Ensure Lead_Talent exists
             if 'Lead_Talent' not in m_df.columns:
                 m_df['Lead_Talent'] = 'Ensemble'
             
-            # Ensure required columns exist with defaults
             required_cols = {
                 'Project': 'Unknown',
                 'Genre': 'Other',
@@ -312,20 +291,64 @@ def scroll_to_element(element_id):
     )
 
 
+def calculate_genre_opportunity(df_full, genre_filter):
+    """
+    Calculate Genre Market Opportunity using percentile-based saturation.
+    
+    Logic:
+    - Count movies per genre across the full database
+    - For selected genres, find their average movie count
+    - Compare to all genres: if selected genres have MORE movies than most,
+      they're saturated (low opportunity / Red Ocean)
+    - If selected genres have FEWER movies, they're underserved (high opportunity / Blue Ocean)
+    """
+    genre_counts = df_full['Genre'].value_counts()
+    
+    # Get counts for selected genres only
+    selected_counts = [genre_counts.get(g, 0) for g in genre_filter if g in genre_counts.index]
+    
+    if not selected_counts:
+        return 0.5, "Moderate", "#ffc107"
+    
+    # Average movie count across selected genres
+    avg_selected_count = np.mean(selected_counts)
+    
+    # What percentile of saturation is this?
+    # Higher count = more saturated = LOWER opportunity
+    saturation_percentile = (genre_counts <= avg_selected_count).mean()
+    
+    # Invert: High saturation percentile = Low opportunity
+    opportunity_pct = 1.0 - saturation_percentile
+    opportunity_pct = max(0.05, min(0.95, opportunity_pct))
+    
+    # 7-level granular labels
+    if opportunity_pct >= 0.85:
+        return opportunity_pct, "Very High", "#1a7f37"
+    elif opportunity_pct >= 0.70:
+        return opportunity_pct, "High", "#28a745"
+    elif opportunity_pct >= 0.55:
+        return opportunity_pct, "Moderate-High", "#5cb85c"
+    elif opportunity_pct >= 0.45:
+        return opportunity_pct, "Moderate", "#ffc107"
+    elif opportunity_pct >= 0.30:
+        return opportunity_pct, "Moderate-Low", "#fd7e14"
+    elif opportunity_pct >= 0.15:
+        return opportunity_pct, "Low", "#dc3545"
+    else:
+        return opportunity_pct, "Very Low", "#8b0000"
+
+
 # --- 4. SIDEBAR STUDIO CONTROLS ---
 
-# Branded loading state
 with st.spinner('🎬 Loading Market Intelligence...'):
     real_df = load_real_data()
     df_full = real_df if real_df is not None else load_placeholder_data()
 
-# FIX: Ensure df_full has no duplicate columns before any operations
 df_full = df_full.loc[:, ~df_full.columns.duplicated(keep='first')]
 
 if "active_scenario_name" not in st.session_state:
     st.session_state.active_scenario_name = "Default"
 
-# Decoupled state for the expander
 if "import_expanded" not in st.session_state:
     st.session_state.import_expanded = False
 
@@ -334,11 +357,9 @@ with st.sidebar:
     
     all_genres = sorted([str(g) for g in df_full['Genre'].unique() if pd.notna(g)])
     
-    # Store default genres for interaction detection
     if st.session_state.default_genres is None:
         st.session_state.default_genres = [g for g in ["Drama", "Comedy", "Action", "Thriller", "Horror"] if g in all_genres]
     
-    # --- 4a. IMPORT DROPDOWN (AUTO-CLOSING) ---
     def handle_import():
         file = st.session_state.scenario_uploader
         if file is not None:
@@ -348,7 +369,6 @@ with st.sidebar:
                     st.session_state.saved_filters.update(imported_data)
                     st.toast(f"Imported {len(imported_data)} scenarios!", icon="📂")
                     st.session_state.import_expanded = False
-                    # Mark user as having interacted
                     st.session_state.user_has_interacted = True
                     st.session_state.first_visit = False
                 else:
@@ -364,7 +384,6 @@ with st.sidebar:
             on_change=handle_import
         )
 
-    # --- 4b. SELECTION & FILTERING ---
     if st.session_state.saved_filters:
         def load_scenario_callback():
             sel = st.session_state["scenario_loader"]
@@ -372,7 +391,6 @@ with st.sidebar:
                 st.session_state["genre_selector"] = st.session_state.saved_filters[sel]
                 st.session_state.active_scenario_name = sel
                 st.toast(f"View Switched: {sel}")
-                # Mark user as having interacted
                 st.session_state.user_has_interacted = True
                 st.session_state.first_visit = False
 
@@ -383,16 +401,13 @@ with st.sidebar:
             on_change=load_scenario_callback
         )
 
-    # Callback to track user interaction with genre filter
     def on_genre_change():
         st.session_state.active_scenario_name = "Custom (Modified)"
-        # Check if user has changed from defaults
         current_selection = st.session_state.get("genre_selector", [])
         if set(current_selection) != set(st.session_state.default_genres):
             st.session_state.user_has_interacted = True
             st.session_state.first_visit = False
 
-    # The Main Multiselect
     if "genre_selector" not in st.session_state:
         st.session_state["genre_selector"] = st.session_state.default_genres.copy()
 
@@ -403,12 +418,10 @@ with st.sidebar:
         on_change=on_genre_change
     )
     
-    # --- 4c. SCENARIO MANAGEMENT ---
     st.subheader("💾 Scenario Management")
     
     scenario_name = st.text_input("Scenario Name", placeholder="e.g., Q1 Sci-Fi Push")
     
-    # Disable save button when invalid
     save_disabled = not scenario_name or not genre_filter
     
     if st.button("💾 Save Scenario", use_container_width=True, disabled=save_disabled):
@@ -419,8 +432,6 @@ with st.sidebar:
         st.success(f"Saved '{scenario_name}'")
         st.rerun()
     
-
-    # Export & Clear
     if st.session_state.saved_filters:
         st.download_button(
             label="📥 Export Scenarios (.json)",
@@ -429,15 +440,28 @@ with st.sidebar:
             data=json.dumps(st.session_state.saved_filters),
             use_container_width=True
         )
-        if st.button("🗑️ Clear All Scenarios", use_container_width=True, type="secondary"):
-            st.session_state.saved_filters = {}
-            st.session_state.active_scenario_name = "Default (Industry Standard)"
-            st.rerun()
+        
+        # Confirmation flow for destructive action
+        if not st.session_state.confirm_clear:
+            if st.button("🗑️ Clear All Scenarios", use_container_width=True, type="secondary"):
+                st.session_state.confirm_clear = True
+                st.rerun()
+        else:
+            st.warning("⚠️ This will delete all saved scenarios.")
+            col_yes, col_no = st.columns(2)
+            with col_yes:
+                if st.button("Yes, Clear All", type="primary", use_container_width=True):
+                    st.session_state.saved_filters = {}
+                    st.session_state.active_scenario_name = "Default"
+                    st.session_state.confirm_clear = False
+                    st.rerun()
+            with col_no:
+                if st.button("Cancel", use_container_width=True):
+                    st.session_state.confirm_clear = False
+                    st.rerun()
     else:
-        # Empty state hint
         st.info("💡 Save your first scenario to unlock Export features")
         
-    # Export options guidance
     with st.expander("📄 Export Options"):
         st.markdown("""
         **Print Report:** Use `Ctrl+P` / `Cmd+P` to print this view  
@@ -455,7 +479,6 @@ with st.sidebar:
    </div>
 """, unsafe_allow_html=True)
     
-    # --- DATA SOURCE INJECTION ---
     with st.expander("📚 Data Sources & Intelligence"):
         st.caption("This engine aggregates market metadata from:")
         st.markdown("""
@@ -463,7 +486,7 @@ with st.sidebar:
         - [2023 930k Movie Dataset](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies)
         - [Comprehensive TMDB Reviews](https://www.kaggle.com/datasets/rishabhkumar2003/the-movie-database-tmdb-comprehensive-dataset)
         
-        **Sourced March 2026.**
+        **Data Snapshot: SPRING 2026**
         """)
     
     st.markdown("---")
@@ -477,8 +500,6 @@ with st.sidebar:
 
 # --- 5. DATA FILTERING LOGIC ---
 df = df_full[df_full['Genre'].isin(genre_filter)].copy()
-
-# FIX: Ensure filtered df also has no duplicate columns
 df = df.loc[:, ~df.columns.duplicated(keep='first')]
 
 # --- 6. MAIN INTERFACE ---
@@ -489,12 +510,9 @@ st.markdown(f'''
     </div>
 ''', unsafe_allow_html=True)
 
-# --- AUTO-DISMISSING WELCOME MESSAGE WITH STRATEGY GUIDE REFERENCE ---
-# Only show if first visit AND user hasn't interacted with filters
 if st.session_state.first_visit and not st.session_state.user_has_interacted:
     st.info("🎬 **Welcome to Genre Sync Analytics** — Identify Blue Ocean opportunities by analyzing genre sentiment, market appetite, and saturation. Use the sidebar to filter genres and save scenarios. Need help? Expand the **Strategy Guide** below.")
 
-# --- QUICK START GUIDE (Always collapsed, referenced in welcome message) ---
 with st.expander("ℹ️ STRATEGY GUIDE: How to use Genre Sync"):
     st.markdown("""
     ### **Objective**
@@ -508,14 +526,24 @@ with st.expander("ℹ️ STRATEGY GUIDE: How to use Genre Sync"):
     5.  **Click any bubble** to view detailed project information below the chart.
     
     ### **Key Metrics Explained**
-    | Metric | Green | Yellow | Red |
-    |--------|-------|--------|-----|
-    | Sentiment ROI | High audience approval | Mixed reception | Poor reception |
-    | Market Appetite | Hot trending genre | Moderate interest | Low demand |
-    | Market Opportunity | Blue Ocean (low competition) | Competitive | Red Ocean (saturated) |
+    | Metric | Meaning |
+    |--------|---------|
+    | Sentiment ROI | Audience approval level based on ratings |
+    | Market Appetite | How popular/trending this genre is globally |
+    | Market Opportunity | Blue Ocean (underserved) vs Red Ocean (saturated) |
+    
+    ### **Opportunity Levels**
+    | Level | Color | Meaning |
+    |-------|-------|---------|
+    | Very High | 🟢 Dark Green | Extremely underserved — prime Blue Ocean |
+    | High | 🟢 Green | Strong opportunity, low competition |
+    | Moderate-High | 🟢 Light Green | Good opportunity with some competition |
+    | Moderate | 🟡 Yellow | Balanced market |
+    | Moderate-Low | 🟠 Orange | Competitive market |
+    | Low | 🔴 Red | Saturated — Red Ocean territory |
+    | Very Low | 🔴 Dark Red | Extremely crowded market |
     """)
 
-# --- ENHANCED EMPTY STATE ---
 if df.empty:
     st.markdown("""
         <div class="empty-state">
@@ -533,34 +561,19 @@ if not df.empty:
     raw_sentiment = df['Sentiment_Score'].mean()
     sentiment_pct = (raw_sentiment + 1) / 2 
     
-    # Get the 90th percentile of your filtered genre
     genre_90th = df['Popularity_Score'].quantile(0.90)
-    
-    # Find where that score sits as a percentile of the ENTIRE dataset
     market_percentile = (df_full['Popularity_Score'] < genre_90th).mean()
-    
-    # Convert to 0-100 scale
     avg_market = int(market_percentile * 100)
     avg_market = max(2, min(100, avg_market))
     
-    # Genre Market Opportunity Logic
-    saturation_ratio = len(df) / len(df_full)
-    opportunity_pct = max(0.05, min(0.95, 1.0 - saturation_ratio))
+    # NEW: Use the fixed opportunity calculation
+    opportunity_pct, opp_label, opp_color = calculate_genre_opportunity(df_full, genre_filter)
     
-    if opportunity_pct > 0.80: 
-        opp_label = "High"
-        opp_color = "#28a745"
-    elif opportunity_pct > 0.50: 
-        opp_label = "Moderate" 
-        opp_color = "#ffc107"
-    else:                      
-        opp_label = "Low"
-        opp_color = "#dc3545"
 else:
     sentiment_pct, avg_market, opportunity_pct = 0, 0, 0
     opp_label, opp_color = "N/A", "#888"
 
-# --- DYNAMIC COLOR MAPPING ---
+# Sentiment color mapping
 if sentiment_pct > 0.6: 
     sent_color, sent_label = "#28a745", "High"
 elif sentiment_pct > 0.4: 
@@ -568,6 +581,7 @@ elif sentiment_pct > 0.4:
 else: 
     sent_color, sent_label = "#888", "Neutral"
 
+# Market appetite color mapping
 if avg_market > 80: 
     app_color = "#28a745"
 elif avg_market > 50: 
@@ -575,7 +589,7 @@ elif avg_market > 50:
 else: 
     app_color = "#dc3545"
 
-# --- METRIC CARDS WITH ARIA LABELS ---
+# --- METRIC CARDS ---
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -603,7 +617,7 @@ with col3:
         <div class="metric-card" role="region" aria-label="Market Opportunity Metric">
             <div class="metric-caption">Genre Market Opportunity</div>
             <div style="color: {opp_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{opp_label}</div>
-            <div style="color: #ffd600; font-size: 0.8rem;">Blue Ocean Potential</div>
+            <div style="color: #ffd600; font-size: 0.8rem;">Blue Ocean Index</div>
         </div>
     """, unsafe_allow_html=True)
     st.progress(max(0.0, min(1.0, float(opportunity_pct))))
@@ -613,8 +627,6 @@ st.markdown("""
     <style>
     [data-testid="stTabPanel"] { padding-top: 0rem !important; }
     .stPlotlyChart { margin-top: -10px !important; }
-    
-    /* Move Toast to the left side near sidebar */
     [data-testid="stToastContainer"] {
         left: 40px !important;
         right: auto !important;
@@ -626,14 +638,9 @@ st.markdown("""
 tab1, tab2 = st.tabs(["🎯 Narrative Performance", "📊 Genre Distribution"])
 
 with tab1:
-    # Create a clean copy and ensure no duplicate columns for Plotly
     display_df = df.copy()
     display_df = display_df.loc[:, ~display_df.columns.duplicated(keep='first')]
-    
-    # Truncate long movie titles for cleaner hover tooltips
     display_df['Display_Title'] = display_df['Project'].apply(truncate_title)
-    
-    # Reset index to ensure clean point indexing for click events
     display_df = display_df.reset_index(drop=True)
     
     active_genres_str = ", ".join(genre_filter) if genre_filter else "All Genres"
@@ -641,7 +648,6 @@ with tab1:
     y_max = display_df['Popularity_Score'].max()
     y_upper_limit = y_max * 1.15 if y_max > 0 else 100
 
-    # Build hover_data safely - only include Lead_Talent if it exists
     hover_data_config = {
         "Sentiment_Score": ":.2f",
         "Popularity_Score": ":.1f",
@@ -650,47 +656,43 @@ with tab1:
     if "Lead_Talent" in display_df.columns:
         hover_data_config["Lead_Talent"] = True
 
-    # Custom color palette with 30+ unique colors for genres
     GENRE_COLORS = {
-        'Comedy': '#FFD700',        # Gold
-        'Drama': '#4169E1',         # Royal Blue
-        'Action': '#FF4500',        # Orange Red
-        'Horror': '#8B0000',        # Dark Red
-        'Thriller': '#483D8B',      # Dark Slate Blue
-        'Sci-Fi': '#00CED1',        # Dark Turquoise
-        'Fantasy': '#9932CC',       # Dark Orchid
-        'Romance': '#FF69B4',       # Hot Pink
-        'Animation': '#32CD32',     # Lime Green
-        'Documentary': '#808080',   # Gray
-        'Family': '#FFA07A',        # Light Salmon
-        'TV Series': '#6495ED',     # Cornflower Blue
-        'Reality': '#00FA9A',       # Medium Spring Green
-        'International': '#DB7093', # Pale Violet Red
-        'Musical': '#FF1493',       # Deep Pink
-        'War': '#556B2F',           # Dark Olive Green
-        'Western': '#D2691E',       # Chocolate
-        'Crime': '#2F4F4F',         # Dark Slate Gray
-        'Mystery': '#4B0082',       # Indigo
-        'Supernatural': '#663399',  # Rebecca Purple
-        'Indie': '#20B2AA',         # Light Sea Green
-        'Classic': '#DAA520',       # Goldenrod
-        'Sports': '#228B22',        # Forest Green
-        'Short': '#BC8F8F',         # Rosy Brown
-        'Adult': '#A52A2A',         # Brown
-        'Unknown': '#696969',       # Dim Gray
-        'Other': '#778899',         # Light Slate Gray
+        'Comedy': '#FFD700',
+        'Drama': '#4169E1',
+        'Action': '#FF4500',
+        'Horror': '#8B0000',
+        'Thriller': '#483D8B',
+        'Sci-Fi': '#00CED1',
+        'Fantasy': '#9932CC',
+        'Romance': '#FF69B4',
+        'Animation': '#32CD32',
+        'Documentary': '#808080',
+        'Family': '#FFA07A',
+        'TV Series': '#6495ED',
+        'Reality': '#00FA9A',
+        'International': '#DB7093',
+        'Musical': '#FF1493',
+        'War': '#556B2F',
+        'Western': '#D2691E',
+        'Crime': '#2F4F4F',
+        'Mystery': '#4B0082',
+        'Supernatural': '#663399',
+        'Indie': '#20B2AA',
+        'Classic': '#DAA520',
+        'Sports': '#228B22',
+        'Short': '#BC8F8F',
+        'Adult': '#A52A2A',
+        'Unknown': '#696969',
+        'Other': '#778899',
     }
     
-    # Get unique genres in the current data
     unique_genres = display_df['Genre'].unique().tolist()
     
-    # Build color sequence for current genres
     color_sequence = []
     for genre in unique_genres:
         if genre in GENRE_COLORS:
             color_sequence.append(GENRE_COLORS[genre])
         else:
-            # Generate a color for any new/unmapped genre
             import hashlib
             hash_val = int(hashlib.md5(genre.encode()).hexdigest()[:6], 16)
             r = (hash_val >> 16) & 255
@@ -704,7 +706,7 @@ with tab1:
         y="Popularity_Score", 
         size="Popularity_Score", 
         color="Genre", 
-        hover_name="Display_Title",  # Uses truncated title
+        hover_name="Display_Title",
         hover_data=hover_data_config,
         range_x=[-0.01, 1.08], 
         range_y=[0, y_upper_limit],
@@ -716,7 +718,6 @@ with tab1:
     
     fig_scatter.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
     
-    # Horizontal legend with breathing room
     fig_scatter.update_layout(
         showlegend=True,
         legend=dict(
@@ -744,7 +745,6 @@ with tab1:
         </p>
     """, unsafe_allow_html=True)
     
-    # Render chart with click selection enabled
     selection = st.plotly_chart(
         fig_scatter, 
         use_container_width=True, 
@@ -753,29 +753,24 @@ with tab1:
         selection_mode=["points"]
     )
     
-    # Handle click selection
     if selection and selection.selection and len(selection.selection.points) > 0:
-        # Get the clicked point's index
         point_data = selection.selection.points[0]
         point_idx = point_data.get("point_index", None)
         
         if point_idx is not None and point_idx < len(display_df):
             new_selection = display_df.iloc[point_idx]['Project']
-            # Check if this is a new selection
             if new_selection != st.session_state.selected_project:
                 st.session_state.selected_project = new_selection
                 st.session_state.just_selected = True
             else:
                 st.session_state.just_selected = False
 
-    # --- SELECTED PROJECT DETAILS CARD ---
     if st.session_state.selected_project:
         selected_row = df[df['Project'] == st.session_state.selected_project]
         
         if not selected_row.empty:
             row = selected_row.iloc[0]
             
-            # Get sentiment label for this specific project
             proj_sentiment = row['Sentiment_Score']
             if proj_sentiment > 0.6:
                 proj_sent_color, proj_sent_label = "#28a745", "High"
@@ -786,15 +781,12 @@ with tab1:
             else:
                 proj_sent_color, proj_sent_label = "#dc3545", "Low"
             
-            # Show toast notification on new selection
             if st.session_state.just_selected:
                 st.toast(f"⬇️ Project details loaded below", icon="🎬")
                 st.session_state.just_selected = False
             
-            # Anchor for scrolling - place BEFORE the card
             st.markdown('<div id="selected-project-details"></div>', unsafe_allow_html=True)
             
-            # Header with clear button
             header_col1, header_col2 = st.columns([4, 1])
             with header_col1:
                 st.markdown("### 🎯 Selected Project Details")
@@ -804,7 +796,6 @@ with tab1:
                     st.session_state.just_selected = False
                     st.rerun()
             
-            # Project details card
             st.markdown(f"""
                 <div class="selected-project-card">
                     <div class="project-title">🎬 {row['Project']}</div>
@@ -817,10 +808,8 @@ with tab1:
                 </div>
             """, unsafe_allow_html=True)
             
-            # Auto-scroll to the details card
             scroll_to_element("selected-project-details")
         else:
-            # Project not found in current filter - clear selection
             st.session_state.selected_project = None
             st.session_state.just_selected = False
 
@@ -850,12 +839,9 @@ with tab2:
     )
     st.plotly_chart(fig_bar, use_container_width=True, key="genre_distribution_bar")
 
-# --- FULL INTELLIGENCE LEDGER ---
 with st.expander("📂 View Full Intelligence Ledger", expanded=st.session_state.selected_project is not None):
-    # FIX: Ensure no duplicate columns in the displayed dataframe
     ledger_df = df.loc[:, ~df.columns.duplicated(keep='first')]
     
-    # If a project is selected, highlight/filter to it
     if st.session_state.selected_project:
         st.markdown(f"**Filtered to:** {st.session_state.selected_project}")
         filtered_ledger = ledger_df[ledger_df['Project'] == st.session_state.selected_project]
