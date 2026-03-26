@@ -478,14 +478,29 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     with st.expander("📚 Data Sources & Intelligence"):
-        st.caption("This engine aggregates market metadata from:")
-        st.markdown("""
-        - [TMDB Movie Metadata](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)
-        - [2023 930k Movie Dataset](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies)
-        - [Comprehensive TMDB Reviews](https://www.kaggle.com/datasets/rishabhkumar2003/the-movie-database-tmdb-comprehensive-dataset)
+        st.caption("This engine aggregates market metadata from Kaggle datasets across film, TV, streaming, and online video:")
 
-        **Data Snapshot: SPRING 2026**
-        """)
+        st.markdown("""
+    **Smallest / Highly Curated**
+    - [TMDB Top 10,000 Popular Movies Dataset](https://www.kaggle.com/datasets/sankha1998/tmdb-top-10000-popular-movies-dataset)
+    - [IMDb Top 5000 Movies](https://www.kaggle.com/datasets/tiagoadrianunes/imdb-top-5000-movies)
+    - [Netflix Shows](https://www.kaggle.com/datasets/shivamb/netflix-shows)
+    - [Movies](https://www.kaggle.com/datasets/abdallahwagih/movies)
+    - [TMDB Movie Metadata](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)
+
+    **Mid-Size / Comprehensive**
+    - [The Movie Database (TMDB) Comprehensive Dataset](https://www.kaggle.com/datasets/rishabhkumar2003/the-movie-database-tmdb-comprehensive-dataset)
+    - [TMDB IMDb Merged Movies Dataset](https://www.kaggle.com/datasets/ggtejas/tmdb-imdb-merged-movies-dataset)
+    - [Movies](https://www.kaggle.com/datasets/mohammedalsubaie/movies)
+    - [IMDb Dataset](https://www.kaggle.com/datasets/ahmedosamamath/imdb-dataset)
+
+    **Large Scale / Global**
+    - [TMDB Movies Dataset 2023 (930k Movies)](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies)
+    - [TMDB Movies Daily Updates](https://www.kaggle.com/datasets/alanvourch/tmdb-movies-daily-updates)
+    - [Trending YouTube Videos – 113 Countries](https://www.kaggle.com/datasets/asaniczka/trending-youtube-videos-113-countries)
+
+    **Data Snapshot: SPRING 2026**
+    """)
 
     st.markdown("---")
     st.markdown("Follow me on:")
