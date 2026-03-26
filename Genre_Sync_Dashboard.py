@@ -57,6 +57,14 @@ st.set_page_config(
     layout="wide"
 )
 
+# This doesn't change the filename, just how Streamlit refers to your app
+st.set_page_config(
+    page_title="Genre Sync Analytics | Designed by Ida Akiwumi", 
+    page_icon="🎬",
+    layout="wide",
+    initial_sidebar_state="expanded"  # Optional: sidebar starts open
+)
+
 # SEO-friendly static header that renders early
 st.markdown("""
 <div style="display:none;" aria-hidden="true">
