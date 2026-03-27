@@ -29,6 +29,14 @@ import os
 import numpy as np
 import json
 
+# --- UI SETUP: MUST COME BEFORE OTHER STREAMLIT COMMANDS ---
+st.set_page_config(
+    page_title="Genre Sync Analytics | Designed by Ida Akiwumi",
+    page_icon="🎬",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # --- 1. INITIALIZE STATE ---
 def init_state():
     if "data_loaded" not in st.session_state:
@@ -51,17 +59,12 @@ def init_state():
         st.session_state.confirm_clear = False
     if "ignore_next_plot_selection" not in st.session_state:
         st.session_state.ignore_next_plot_selection = False
+    if "allow_scroll_js" not in st.session_state:
+        st.session_state.allow_scroll_js = False
 
 init_state()
 
 # --- 2. UI SETUP & BRANDING ---
-st.set_page_config(
-    page_title="Genre Sync Analytics | Designed by Ida Akiwumi",
-    page_icon="🎬",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
 st.markdown("""
 <div style="display:none;" aria-hidden="true">
 Genre Sync Analytics: Film industry ROI dashboard for genre strategy,
@@ -264,7 +267,6 @@ def load_real_data():
         print(f"❌ Error loading data: {e}")
         return None
 
-
 def truncate_title(title, max_words=6):
     """Truncate title to max_words and add ellipsis if longer"""
     if pd.isna(title):
@@ -274,9 +276,14 @@ def truncate_title(title, max_words=6):
         return ' '.join(words[:max_words]) + '...'
     return str(title)
 
+def scroll_js_enabled():
+    return st.session_state.allow_scroll_js and st.session_state.user_has_interacted
 
 def scroll_to_element(element_id):
-    """Inject JavaScript to scroll to a specific element"""
+    """Inject JavaScript to scroll to a specific element only after real user interaction."""
+    if not scroll_js_enabled():
+        return
+
     components.html(
         f"""
         <script>
@@ -290,7 +297,6 @@ def scroll_to_element(element_id):
         """,
         height=0
     )
-
 
 def calculate_genre_opportunity(df_full, genre_filter):
     """
@@ -323,7 +329,6 @@ def calculate_genre_opportunity(df_full, genre_filter):
     else:
         return opportunity_pct, "Very Low", "#8b0000"
 
-
 def get_sentiment_label_and_color(score):
     """Map -1 to 1 sentiment score to label/color."""
     if score >= 0.4:
@@ -334,7 +339,6 @@ def get_sentiment_label_and_color(score):
         return "Neutral", "#888"
     else:
         return "Low", "#dc3545"
-
 
 # --- 4. SIDEBAR STUDIO CONTROLS ---
 with st.spinner('🎬 Loading Market Intelligence...'):
@@ -754,6 +758,9 @@ with tab1:
             if new_selection != st.session_state.selected_project:
                 st.session_state.selected_project = new_selection
                 st.session_state.just_selected = True
+                st.session_state.user_has_interacted = True
+                st.session_state.first_visit = False
+                st.session_state.allow_scroll_js = True
             else:
                 st.session_state.just_selected = False
 
@@ -779,6 +786,7 @@ with tab1:
                 if st.button("✕ Clear", key="clear_selection", type="secondary"):
                     st.session_state.selected_project = None
                     st.session_state.just_selected = False
+                    st.session_state.allow_scroll_js = False
                     st.rerun()
 
             st.markdown(f"""
@@ -799,6 +807,7 @@ with tab1:
         else:
             st.session_state.selected_project = None
             st.session_state.just_selected = False
+            st.session_state.allow_scroll_js = False
 
 with tab2:
     genre_counts = df['Genre'].value_counts().reset_index()
