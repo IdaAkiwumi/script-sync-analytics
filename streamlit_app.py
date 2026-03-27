@@ -502,7 +502,6 @@ with st.sidebar:
     **Large Scale / Global**
     - [TMDB Movies Dataset 2023 (930k Movies)](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies)
     - [TMDB Movies Daily Updates](https://www.kaggle.com/datasets/alanvourch/tmdb-movies-daily-updates)
-    - [Trending YouTube Videos – 113 Countries](https://www.kaggle.com/datasets/asaniczka/trending-youtube-videos-113-countries)
 
     **Data Snapshot: SPRING 2026**
     """)
