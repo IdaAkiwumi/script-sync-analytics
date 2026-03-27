@@ -766,13 +766,14 @@ with tab1:
         else:
             clear_project_selection()
 
+    # --- SELECTED PROJECT DETAILS SECTION (FIXED) ---
     if st.session_state.selected_project:
-        selected_row = df[df['Project'] == st.session_state.selected_project]
+        selected_row = df[df["Project"] == st.session_state.selected_project]
 
         if not selected_row.empty:
             row = selected_row.iloc[0]
 
-            proj_sentiment = row['Sentiment_Score']
+            proj_sentiment = row["Sentiment_Score"]
             proj_sent_label, proj_sent_color = get_sentiment_label_and_color(proj_sentiment)
 
             if st.session_state.just_selected:
@@ -780,19 +781,29 @@ with tab1:
                 st.session_state.just_selected = False
 
             st.markdown('<div id="selected-project-details"></div>', unsafe_allow_html=True)
+            st.markdown("### 🎯 Selected Project Details")
 
-            header_col1, header_col2 = st.columns([4, 1])
-            with header_col1:
-                st.markdown("### 🎯 Selected Project Details")
-            with header_col2:
-                if st.button("✕ Clear", key="clear_selection", type="secondary"):
+            title_col, clear_col = st.columns([5, 1])
+
+            with title_col:
+                st.markdown(
+                    f"""
+                    <div style="margin-top: 2px; margin-bottom: 8px;">
+                        <span style="color: #ffffff; font-size: 1.35rem; font-weight: bold;">🎬 {row['Project']}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            with clear_col:
+                if st.button("✕ Clear", key="clear_selection", type="secondary", use_container_width=True):
                     clear_project_selection()
                     st.session_state.ignore_next_plot_selection = True
                     st.rerun()
 
-            st.markdown(f"""
+            st.markdown(
+                f"""
                 <div class="selected-project-card">
-                    <div class="project-title">🎬 {row['Project']}</div>
                     <div class="project-meta">
                         <strong>Genre:</strong> {row['Genre']}<br>
                         <strong>Content Type:</strong> {row.get('Content_Type', 'N/A')}<br>
@@ -802,7 +813,9 @@ with tab1:
                         <strong>Market Appetite Score:</strong> {row['Popularity_Score']:.1f}
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
+                """,
+                unsafe_allow_html=True
+            )
 
             scroll_to_element("selected-project-details")
         else:
