@@ -468,7 +468,7 @@ with st.sidebar:
     with st.expander("📄 Export Options"):
         st.markdown("""
         **Print Report:** Use `Ctrl+P` / `Cmd+P` to print this view 
-         **Export Charts:** Hover any chart → press camera icon to 'Download plot as PNG'
+        **Export Charts:** Hover any chart → press camera icon to 'Download plot as PNG'
         **Export Data:** Use the 'Full Intelligence Ledger' expander below
         """)
 
