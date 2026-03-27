@@ -1,6 +1,6 @@
 """
 PROJECT: Genre Sync Analytics
-VERSION: 1.1.1
+VERSION: 1.0.0
 AUTHOR: Ida Akiwumi
 ROLE: Product Architect | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
@@ -268,7 +268,6 @@ def load_real_data():
         return None
 
 def truncate_title(title, max_words=6):
-    """Truncate title to max_words and add ellipsis if longer"""
     if pd.isna(title):
         return "Unknown"
     words = str(title).split()
@@ -280,7 +279,6 @@ def scroll_js_enabled():
     return st.session_state.allow_scroll_js and st.session_state.user_has_interacted
 
 def scroll_to_element(element_id):
-    """Inject JavaScript to scroll to a specific element only after real user interaction."""
     if not scroll_js_enabled():
         return
 
@@ -298,10 +296,12 @@ def scroll_to_element(element_id):
         height=0
     )
 
+def clear_project_selection():
+    st.session_state.selected_project = None
+    st.session_state.just_selected = False
+    st.session_state.allow_scroll_js = False
+
 def calculate_genre_opportunity(df_full, genre_filter):
-    """
-    Calculate Genre Market Opportunity using percentile-based saturation.
-    """
     genre_counts = df_full['Genre'].value_counts()
     selected_counts = [genre_counts.get(g, 0) for g in genre_filter if g in genre_counts.index]
 
@@ -330,7 +330,6 @@ def calculate_genre_opportunity(df_full, genre_filter):
         return opportunity_pct, "Very Low", "#8b0000"
 
 def get_sentiment_label_and_color(score):
-    """Map -1 to 1 sentiment score to label/color."""
     if score >= 0.4:
         return "High", "#28a745"
     elif score >= 0.1:
@@ -410,6 +409,8 @@ with st.sidebar:
         if set(current_selection) != set(st.session_state.default_genres):
             st.session_state.user_has_interacted = True
             st.session_state.first_visit = False
+        clear_project_selection()
+        st.session_state.ignore_next_plot_selection = True
 
     if "genre_selector" not in st.session_state:
         st.session_state["genre_selector"] = st.session_state.default_genres.copy()
@@ -574,20 +575,15 @@ if df.empty:
     st.stop()
 
 # --- DYNAMIC METRIC CALCULATIONS ---
-if not df.empty:
-    raw_sentiment = df['Sentiment_Score'].mean()
-    sentiment_pct = (raw_sentiment + 1) / 2
+raw_sentiment = df['Sentiment_Score'].mean()
+sentiment_pct = (raw_sentiment + 1) / 2
 
-    genre_90th = df['Popularity_Score'].quantile(0.90)
-    market_percentile = (df_full['Popularity_Score'] < genre_90th).mean()
-    avg_market = int(market_percentile * 100)
-    avg_market = max(2, min(100, avg_market))
+genre_90th = df['Popularity_Score'].quantile(0.90)
+market_percentile = (df_full['Popularity_Score'] < genre_90th).mean()
+avg_market = int(market_percentile * 100)
+avg_market = max(2, min(100, avg_market))
 
-    opportunity_pct, opp_label, opp_color = calculate_genre_opportunity(df_full, genre_filter)
-else:
-    raw_sentiment = 0.0
-    sentiment_pct, avg_market, opportunity_pct = 0, 0, 0
-    opp_label, opp_color = "N/A", "#888"
+opportunity_pct, opp_label, opp_color = calculate_genre_opportunity(df_full, genre_filter)
 
 sent_label, sent_color = get_sentiment_label_and_color(raw_sentiment)
 
@@ -749,20 +745,26 @@ with tab1:
         selection_mode=["points"]
     )
 
-    if selection and selection.selection and len(selection.selection.points) > 0:
-        point_data = selection.selection.points[0]
-        point_idx = point_data.get("point_index", None)
+    has_selection_payload = selection is not None and hasattr(selection, "selection") and selection.selection is not None
+    selected_points = selection.selection.points if has_selection_payload else None
 
-        if point_idx is not None and point_idx < len(display_df):
-            new_selection = display_df.iloc[point_idx]['Project']
-            if new_selection != st.session_state.selected_project:
-                st.session_state.selected_project = new_selection
-                st.session_state.just_selected = True
-                st.session_state.user_has_interacted = True
-                st.session_state.first_visit = False
-                st.session_state.allow_scroll_js = True
-            else:
-                st.session_state.just_selected = False
+    if st.session_state.ignore_next_plot_selection:
+        st.session_state.ignore_next_plot_selection = False
+    elif selected_points is not None:
+        if len(selected_points) > 0:
+            point_data = selected_points[0]
+            point_idx = point_data.get("point_index", None)
+
+            if point_idx is not None and point_idx < len(display_df):
+                new_selection = display_df.iloc[point_idx]["Project"]
+                if new_selection != st.session_state.selected_project:
+                    st.session_state.selected_project = new_selection
+                    st.session_state.just_selected = True
+                    st.session_state.user_has_interacted = True
+                    st.session_state.first_visit = False
+                    st.session_state.allow_scroll_js = True
+        else:
+            clear_project_selection()
 
     if st.session_state.selected_project:
         selected_row = df[df['Project'] == st.session_state.selected_project]
@@ -774,7 +776,7 @@ with tab1:
             proj_sent_label, proj_sent_color = get_sentiment_label_and_color(proj_sentiment)
 
             if st.session_state.just_selected:
-                st.toast(f"⬇️ Project details loaded below", icon="🎬")
+                st.toast("⬇️ Project details loaded below", icon="🎬")
                 st.session_state.just_selected = False
 
             st.markdown('<div id="selected-project-details"></div>', unsafe_allow_html=True)
@@ -784,9 +786,8 @@ with tab1:
                 st.markdown("### 🎯 Selected Project Details")
             with header_col2:
                 if st.button("✕ Clear", key="clear_selection", type="secondary"):
-                    st.session_state.selected_project = None
-                    st.session_state.just_selected = False
-                    st.session_state.allow_scroll_js = False
+                    clear_project_selection()
+                    st.session_state.ignore_next_plot_selection = True
                     st.rerun()
 
             st.markdown(f"""
@@ -805,17 +806,18 @@ with tab1:
 
             scroll_to_element("selected-project-details")
         else:
-            st.session_state.selected_project = None
-            st.session_state.just_selected = False
-            st.session_state.allow_scroll_js = False
+            clear_project_selection()
 
 with tab2:
     genre_counts = df['Genre'].value_counts().reset_index()
     genre_counts.columns = ['Genre', 'Count']
 
     fig_bar = px.bar(
-        genre_counts, x='Genre', y='Count',
-        color='Genre', template="plotly_dark",
+        genre_counts,
+        x='Genre',
+        y='Count',
+        color='Genre',
+        template="plotly_dark",
         height=450,
         title="Active Market Saturation (Selected Genres)",
         color_discrete_map=GENRE_COLORS
