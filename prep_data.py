@@ -1,6 +1,6 @@
 """
 PREP_DATA.PY - Genre Sync Analytics Data Pipeline
-VERSION: 2.1.1
+VERSION: 2.2.0
 AUTHOR: Ida Akiwumi
 LAST UPDATED: March 2026
 
@@ -672,6 +672,54 @@ def detect_explicit_adult(title='', genre_value='', overview='', keywords=''):
     return False
 
 
+def infer_unknown_from_metadata(row):
+    """
+    More aggressive rescue logic for rows that remain Unknown after primary mapping.
+    Uses title + metadata fields to infer genre.
+    """
+    text = " ".join([
+        str(row.get('Project', '') or ''),
+        str(row.get('_raw_genre', '') or ''),
+        str(row.get('overview', '') or ''),
+        str(row.get('keywords', '') or ''),
+        str(row.get('description', '') or ''),
+        str(row.get('tagline', '') or ''),
+        str(row.get('listed_in', '') or ''),
+    ]).lower()
+
+    rescue_rules = [
+        (['superhero', 'fight', 'explosion', 'agent', 'mercenary', 'assassin'], 'Action'),
+        (['quest', 'expedition', 'journey', 'treasure', 'adventure'], 'Adventure'),
+        (['funny', 'comedy', 'satire', 'stand-up', 'sitcom'], 'Comedy'),
+        (['biography', 'biopic', 'based on the life of'], 'Biography'),
+        (['history', 'historical', 'period piece'], 'History'),
+        (['gangster', 'heist', 'mafia', 'crime', 'cartel'], 'Crime'),
+        (['murder mystery', 'detective', 'whodunit', 'mystery'], 'Mystery'),
+        (['thriller', 'suspense', 'conspiracy', 'chase'], 'Thriller'),
+        (['horror', 'slasher', 'killer', 'terror', 'monster'], 'Horror'),
+        (['haunted', 'ghost', 'paranormal', 'possession', 'demonic', 'occult'], 'Supernatural'),
+        (['space', 'alien', 'future', 'robot', 'time travel', 'dystopian'], 'Sci-Fi'),
+        (['wizard', 'magic', 'dragon', 'myth', 'kingdom', 'fantasy'], 'Fantasy'),
+        (['romance', 'love', 'wedding', 'relationship'], 'Romance'),
+        (['animated', 'animation', 'anime', 'cartoon'], 'Animation'),
+        (['documentary', 'docuseries', 'real story', 'true story'], 'Documentary'),
+        (['kids', 'family', 'children', 'christmas', 'holiday'], 'Family'),
+        (['reality', 'competition', 'dating show', 'game show', 'makeover'], 'Reality'),
+        (['tv series', 'limited series', 'miniseries', 'season 1', 'episode'], 'TV Series'),
+        (['short film', 'youtube', 'web video', 'short'], 'Short'),
+        (['sports', 'football', 'boxing', 'basketball', 'racing'], 'Sports'),
+        (['war', 'soldier', 'battle', 'wwii', 'military'], 'War'),
+        (['western', 'cowboy', 'frontier'], 'Western'),
+        (['musical', 'music', 'concert', 'opera', 'dance'], 'Musical'),
+    ]
+
+    for keywords, genre in rescue_rules:
+        if any(kw in text for kw in keywords):
+            return genre
+
+    return "Unknown"
+
+
 def clean_genre(genre_value, title=''):
     """Map raw genre to consolidated category."""
     title_str = str(title).strip()
@@ -1076,6 +1124,7 @@ def process_and_merge():
             final_df['Sentiment_Score'], errors='coerce'
         ).fillna(0.5)
 
+        # Keep raw popularity scores - NO log transformation, NO clipping
         final_df['Popularity_Score'] = pd.to_numeric(
             final_df['Popularity_Score'], errors='coerce'
         ).fillna(50)
@@ -1108,6 +1157,18 @@ def process_and_merge():
             axis=1
         )
 
+        # --- ENHANCED: Rescue pass for Unknown genres using metadata ---
+        unknown_before = final_df['Genre'].eq('Unknown').sum()
+        if unknown_before > 0:
+            log(f"Attempting to rescue {unknown_before} Unknown genres using metadata...", "PROCESS")
+            unknown_mask = final_df['Genre'] == 'Unknown'
+            final_df.loc[unknown_mask, 'Genre'] = final_df.loc[unknown_mask].apply(
+                infer_unknown_from_metadata, axis=1
+            )
+            unknown_after_rescue = final_df['Genre'].eq('Unknown').sum()
+            rescued = unknown_before - unknown_after_rescue
+            log(f"Rescued {rescued} Unknown genres ({unknown_after_rescue} remaining)", "DATA")
+
         final_df['Genre'] = final_df.apply(filter_adult_content, axis=1)
         if 'Is_Adult' not in final_df.columns:
             final_df['Is_Adult'] = final_df['Genre'].eq('Adult')
@@ -1118,10 +1179,11 @@ def process_and_merge():
         final_df['_norm_title'] = final_df['Project'].apply(normalize_title)
         final_df['_genre_quality'] = (final_df['Genre'] != 'Unknown').astype(int)
         final_df['_talent_quality'] = (final_df['Lead_Talent'] != 'Ensemble').astype(int)
+        final_df['_id_quality'] = final_df['id'].notna().astype(int)
 
         final_df = final_df.sort_values(
-            ['_genre_quality', '_talent_quality', 'Popularity_Score'],
-            ascending=[False, False, False]
+            ['_genre_quality', '_talent_quality', '_id_quality', 'Popularity_Score'],
+            ascending=[False, False, False, False]
         )
 
         before = len(final_df)
@@ -1132,10 +1194,31 @@ def process_and_merge():
         final_df = final_df.drop_duplicates(subset=['_norm_title'], keep='first')
         norm_removed = before - len(final_df)
 
-        final_df = final_df.drop(columns=['_norm_title', '_genre_quality', '_talent_quality'])
+        # --- ENHANCED: Extra rigorous dedupe pass for Unknown only ---
+        before_unknown = len(final_df)
+        known_df = final_df[final_df['Genre'] != 'Unknown'].copy()
+        unknown_df = final_df[final_df['Genre'] == 'Unknown'].copy()
+
+        if not unknown_df.empty:
+            unknown_df['_unknown_key'] = (
+                unknown_df['_norm_title'].fillna('') + '|' +
+                unknown_df['Lead_Talent'].fillna('Ensemble').astype(str).str.lower().str.strip()
+            )
+            unknown_df = unknown_df.sort_values(
+                ['_talent_quality', '_id_quality', 'Popularity_Score'],
+                ascending=[False, False, False]
+            )
+            unknown_df = unknown_df.drop_duplicates(subset=['_unknown_key'], keep='first')
+            unknown_df = unknown_df.drop(columns=['_unknown_key'])
+
+        final_df = pd.concat([known_df, unknown_df], ignore_index=True, sort=False)
+        unknown_removed_extra = before_unknown - len(final_df)
+
+        final_df = final_df.drop(columns=['_norm_title', '_genre_quality', '_talent_quality', '_id_quality'], errors='ignore')
 
         log(f"Removed {exact_removed} exact duplicates", "DATA")
         log(f"Removed {norm_removed} normalized duplicates", "DATA")
+        log(f"Removed {unknown_removed_extra} additional Unknown duplicates", "DATA")
         log(f"After deduplication: {len(final_df)} unique projects", "DATA")
 
         final_df = final_df.sort_values('Popularity_Score', ascending=False)
@@ -1229,9 +1312,9 @@ def process_and_merge():
 
 def main():
     """Main entry point."""
-    print("\n - prep_data.py:1232" + "=" * 50)
-    print("🎬 GENRE SYNC ANALYTICS DATA PIPELINE v2.1.1 - prep_data.py:1233")
-    print("= - prep_data.py:1234" * 50 + "\n")
+    print("\n - prep_data.py:1315" + "=" * 50)
+    print("🎬 GENRE SYNC ANALYTICS DATA PIPELINE v2.2.0 - prep_data.py:1316")
+    print("= - prep_data.py:1317" * 50 + "\n")
 
     refresh_flag = "--refresh" in sys.argv
 
@@ -1246,9 +1329,9 @@ def main():
     process_and_merge()
     cleanup_raw_data()
 
-    print("\n - prep_data.py:1249" + "=" * 50)
-    print("✅ All done! Your data is ready for Genre Sync Analytics. - prep_data.py:1250")
-    print("= - prep_data.py:1251" * 50 + "\n")
+    print("\n - prep_data.py:1332" + "=" * 50)
+    print("✅ All done! Your data is ready for Genre Sync Analytics. - prep_data.py:1333")
+    print("= - prep_data.py:1334" * 50 + "\n")
 
 
 if __name__ == "__main__":
