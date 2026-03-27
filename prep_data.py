@@ -1,6 +1,6 @@
 """
 PREP_DATA.PY - Genre Sync Analytics Data Pipeline
-VERSION: 2.2.0
+VERSION: 1.0.0
 AUTHOR: Ida Akiwumi
 LAST UPDATED: March 2026
 
