@@ -282,7 +282,7 @@ If this tool helped you refine a slate, shape a creative strategy, or think more
 
 ## 👩🏽‍💻 Developed by Ida Akiwumi
 
-**Lead Product Designer | Product Architect | Narrative Strategist**
+**Lead Product Designer | Creative Technologist | Narrative Strategist**
 
 *Translating user friction into product opportunities.*
 
