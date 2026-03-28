@@ -189,7 +189,7 @@ st.markdown("""
 <div class="about-section">
 <h2>About the Creator</h2>
 
-**Ida Akiwumi** is a **Product Architect** and **Narrative Strategist** specializing 
+**Ida Akiwumi** is a **Creative Technologist** and **Narrative Strategist** specializing 
 in the intersection of technology and storytelling. With expertise in data 
 visualization, user experience design, and entertainment industry workflows, 
 Ida builds tools that help creative professionals make informed decisions.
@@ -242,7 +242,7 @@ st.markdown("""
 <div style="position: absolute; left: -9999px; opacity: 0;" aria-hidden="true">
 Genre Sync Analytics is a film industry analytics dashboard for movie market 
 analysis, entertainment ROI tracking, and genre strategy planning. Built by 
-Ida Akiwumi, Product Architect specializing in data visualization for creative 
+Ida Akiwumi, Creative Technologist specializing in data visualization for creative 
 industries. Features include sentiment analysis, market appetite scoring, 
 blue ocean opportunity identification, and scenario planning for film production 
 decisions. Ideal for studio executives, independent producers, greenlight 
