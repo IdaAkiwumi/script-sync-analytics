@@ -2,7 +2,7 @@
 PROJECT: Genre Sync Analytics
 VERSION: 1.0.0
 AUTHOR: Ida Akiwumi
-ROLE: Product Architect | Narrative Strategist | Lead Product Designer
+ROLE: Creative Technologist | Narrative Strategist | Lead Product Designer
 TECH STACK: Python, Streamlit, Pandas, Plotly, TextBlob
 
 DESCRIPTION:
@@ -512,7 +512,7 @@ with st.sidebar:
 
     st.markdown(f"""
         **Developed by {__author__}**,
-        *Product Architect & Narrative Strategist* Specializing in the intersection of code and story.
+        *Creative Technologist & Narrative Strategist* Specializing in the intersection of code and story.
     """)
 
 # --- 5. DATA FILTERING LOGIC ---
